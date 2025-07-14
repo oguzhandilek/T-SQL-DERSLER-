@@ -1,3 +1,337 @@
 T-SQL DERSLERİ
 
 ServerName alanı için "." localhost ve (local) yazmanız aynı şeyler ifade eder.
+
+localhostta yenii bir veritabanı oluşurmak için CMD  satırına localdb create veritabaniAdi yazmanız yeterli.
+ Daha sonra Managment Sever Name alanına (local)\veritabaniAdi yazarak bağlanabilirisniz.
+ 
+ 
+ 
+ 
+ 
+ --SELECT KOMUTU
+select 3
+
+select 3,5,7
+
+select 'Oğuzhan'
+
+print 'Dilek'
+
+select * from Northwind.dbo.Personeller
+
+select Adi, SoyAdi from Northwind.dbo.Personeller
+
+--  ALIAS ATAMA
+Select Adi Adı, SoyAdi Soyisimler from Northwind.dbo.Personeller
+
+-- Boşluk Karakteri Olan Alias atama
+
+select 1453 [İstanbulun Fethi]
+
+
+-- Boşluk Karakteri Olan Tablo Sorgulama
+
+select * from Northwind.dbo.[Satis Detaylari]
+
+-- Kolonları Birleştirme
+
+Select Adi+' '+ SoyAdi [İsim  ve Soyisimler]  from Northwind.dbo.Personeller
+
+-- Farklı Tipte kolon Birleştirme
+
+Select Adi+' '+ CONVERT(nvarchar,IseBaslamaTarihi) [İşe Başlama Tarihleri] from Northwind.dbo.Personeller
+
+Select Adi+' '+ CAST(IseBaslamaTarihi as nvarchar) [İşe Başlangıç]  from Northwind.dbo.Personeller
+
+
+
+
+
+
+
+USE Northwind
+
+-- SELECT SORGULARıNDA (WHERE) ŞARTı YAZMAK
+
+select * from dbo.Personeller
+
+select * from dbo.Personeller where Sehir='London'
+
+select * from dbo.Personeller where BagliCalistigiKisi<5
+
+--And Operatörü
+-- Personeller tablosunda şehri london ve ülkesi UK olanları listeleyelim.
+
+select * from dbo.Personeller where Sehir='London' and Ulke='UK'
+
+-- Or Operatörü
+-- Personeller tablosunda UnvanEki 'MC.' olan veya şehri Seattle olan tüm personelleri listeleyelim.
+
+select * from dbo.Personeller where UnvanEki='Mr.' or  Sehir='Seattle'
+
+--Karşık Örnekler
+--Adı Robert soyadı King olan personelin tüm bilgilerini çek.
+
+select * from dbo.Personeller where Adi='Robert' and SoyAdi='King'
+
+-- PersonellD'si 5 olan personeli getir.
+select * from dbo.Personeller where PersonelID=5
+
+-- PersonellD'si 5 'ten büyük olan tüm personelleri getir.
+
+select * from dbo.Personeller where PersonelID>=5
+
+-- <> Eşit Değilse
+-- = Eşitse
+-- <= Küçük ve Eşitse
+-- >= Büyük ve Eşitse
+
+-- Fonksiyon Sonuçlarını şart Olarak Kullanmak
+--- 1993 yılında İşe başlayanları listele.
+
+select * from dbo.Personeller where year(IseBaslamaTarihi)=1993
+
+--- 1992 yılından sonra işe başlayanları listele.
+
+select * from dbo.Personeller where YEAR(IseBaslamaTarihi)>1992
+
+-- Doğum günü, ayın 29 olan personelleri listeleyelim.
+
+select *from dbo.Personeller where Day(DogumTarihi)=29
+
+--Doğum yılı 1950 ile 1965 yılları arasında olan personelleri getirelim.
+
+select * from dbo.Personeller where YEAR(DogumTarihi)>1950 and YEAR(DogumTarihi)<1965
+
+--- Yaşadığı şehrin Lcndon, Taccma ve Kirkland olan personellerin adını listeleyelim.
+
+select Adi Adı from dbo.Personeller where Sehir='London' or Sehir='Kirkland' or sehir='Tacoma'
+
+---Between Komutu
+select * from dbo.Personeller where YEAR(DogumTarihi)>1950 and YEAR(DogumTarihi)<1965
+
+select * from dbo.Personeller where YEAR(DogumTarihi) between 1950 and 1965
+
+select * from dbo.Personeller where PersonelID between 2 and 5
+
+--In Komutu
+
+ select Adi İsimler from dbo.Personeller where Sehir='London' or Sehir='Tacoma' or Sehir='Kirkland'
+
+ select Adi isimler from dbo.Personeller where Sehir in('London','Tacoma','Kirklanda')
+
+ select Adi Adı, DogumTarihi [Doğum Tarihi] from  dbo.Personeller where YEAR(DogumTarihi) in(1948,1963)
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Use Northwind
+ -- LIKE SORGULARı
+-- % (Genel Önemli Değil) Operatörü
+
+-- İsminin baş harfi j olan personellerin adını ve soyadını yazdıralım.
+
+select Adi Adı, Soyadi Soyadı  from dbo.Personeller where Adi like('j%')
+
+-- İsminin son harfi y olan personellerin adını ve soyadını yazdıralım.
+
+select Adi İsim, SoyAdi Soyisim from dbo.Personeller where Adi like '%y'
+
+--- İsminin son üç harfi ert olan personeli getirelim.
+
+select Adi,Soyadi from dbo.Personeller where Adi like '%ert'
+
+--- İsminin ilk harfi r, son harfi t olan personeli getirelim.
+
+select Adi,Soyadi from dbo.Personeller where Adi like 'r%t'
+
+-- Gereksiz bir kullanım.
+select Adi,Soyadi from dbo.Personeller where Adi like 'r%' and Adi like'%t'
+
+--- İsminde an geçen personelin adını yazdıralım.
+
+select Adi,Soyadi from dbo.Personeller where Adi like '%an%'
+
+--- İsminin baş harfi n olan ve İçerisinde an geçen personeli getirelim.
+
+select Adi,Soyadi from dbo.Personeller where Adi like 'n%an%'
+
+-- Gereksiz bir kullanım.
+
+select Adi,Soyadi from dbo.Personeller where Adi like 'n%' and Adi like'%an%'
+
+
+
+-- _(özel Onemli Değil) Operatörü
+
+-- İsminin ilk harfi a, ikinci harfi fark etmez ve üçüncü harfi d olan personeli getirelim.
+
+select * from dbo.Personeller where Adi like 'a_d%'
+
+-- İsminin ilk harfi m, ikinci -üçüncü - dördüncü fark etmez ve beşinci harfi a olan personeli getirelim.
+
+select * from dbo.Personeller where Adi like 'm___a%'
+
+--[](ya da) Operatörü
+
+-- İsminin ilk harfi n ya da m ya da r olan personelleri getirelim.
+
+select * from dbo.Personeller where Adi like '[nmr]%'
+
+-- İsminin İçerisinde a ya da İ geçen personelleri getirelim.
+
+select * from dbo.Personeller where Adi like '%[ai]%'
+
+-- [*-*] (Alfabetik Arasında) Operatörü
+
+--- İsminin baş harfi a İle k arasında alfabetik sıraya göre herhangi bir harf olan personellerin adını yazdıralım.
+
+select * from dbo.Personeller where Adi like '[a-k]%'
+
+
+-- [^*] (Değil) Operatörü
+
+--- İsminin baş harfi a olmayan personelleri getirelim.
+
+select *from dbo.Personeller where Adi like '[^a]%'
+
+--- İsminin baş harfi a ya da n olmayan personelleri getirelim.
+
+select * from dbo.Personeller where Adi like '[^an]%'
+
+-- Escape(Kaçış) Karakterleri
+-- Like sorgularında kullandığımız %, _ , [] gibi özel ifadeler eğer ki verilerimiz içerisinde geçiyorsa sorgulama esnasında hata İle karşılaşabiliriz. Böyle durumlarda bu ifadelerin özel ifade olmadığını escape karakterleri İle belirleyebiliriz.
+-- [] Operatörü İle
+-- Escape Komutu İle
+
+ select * from dbo.Personeller where Adi like '[_]%'
+
+ select  Adi,Soyadi from dbo.Personeller where SoyAdi like 'n%%' escape 'n'
+ 
+ select  Adi,Soyadi from dbo.Personeller where SoyAdi like 'n%%' escape 'n'
+ 
+ 
+ 
+ 
+ 
+ --AGGREGATE FONKSİYONLAR
+
+-- AVG : Ortlama Alır
+
+select AVG(PersonelID) PersonelIdOrtalamasi from .dbo.Personeller
+
+select AVG(BirimFiyati) [Birim Fiyatı Ort] from dbo.[Satis Detaylari]
+
+--MAX: En Büyük Değeri Bulur
+
+select max(miktar) Miktar from dbo.[Satis Detaylari]
+
+--MIN : En Küçük Değeri Bulur
+
+select min(miktar) Miktar from dbo.[Satis Detaylari]
+
+-- COUNT: Toplam kayıt Saysını Verir
+
+select COUNT(*) from dbo.Personeller
+
+select count(Adi) [Kayıt Sayısı] from dbo.Personeller
+
+-- SUM: Toplamını Verir
+
+select sum(nakliyeUcreti) nakliyeUcreti from dbo.[Satislar]
+
+
+
+
+
+
+
+--STRING FONKSİYONLAR
+
+-- LEFT :Soldan(baştan) belirtilen sayıda karakteri getirir.
+Select Adi, LEFT(Adi,2) from dbo.Personeller
+
+-- RİGHT : Sağdan(sondan) belirtilen sayıda karakteri getirir.
+
+select Adi, RIGHT(Adi,2) from dbo.Personeller
+
+-- UPPER :Büyük harfe çevirir.
+
+select UPPER(Adi) from dbo.Personeller
+
+select left(UPPER(Adi),3) from dbo.Personeller
+
+-- UPPER :Büyük harfe çevirir.
+
+select UPPER(SoyAdi) from dbo.Personeller
+
+-- SUBSTRING : Belirtilen indexten itibaren belirtilen sayıda karakter getir.
+
+select soyadi, SUBSTRING(SoyAdi,2,3) from dbo.Personeller
+
+-- LTRIM :Soldan boşlukları keser.
+
+select '       Oğuzhan'
+select LTRIM('     Oğuzhan')
+
+--- RTRIM : Sağdaki boşlukları keser.
+
+select RTRIM('Zehra     ')
+
+--- REVERSE :Tersine çevirir.
+
+select REVERSE(Adi) from dbo.Personeller
+
+--- REPLACE :Belirtilen ifadeyi, belirtilen ifade ile değiştirir.
+
+select REPLACE('Merhaba ben Oğuzhan','Oğuzhan','Zehra') 
+
+--CHARZNOEX :Belirtilen karakterin veri içinde sırasını numarasını verir.
+
+select MusteriAdi, CHARINDEX('r',MusteriAdi) from dbo.Musteriler
+
+-- CHARINDEX ornek
+--- Müşteriler tablosunun MusteriAdi kolonundan sadece adlarını çekelim.
+
+select MusteriAdi, SUBSTRING(MusteriAdi,0,CHARINDEX(' ',MusteriAdi)) [İlk Adı] from dbo.Musteriler
+
+--- Müşteriler- tablosunun Muster•iAdi kolonundan sadece soyadlarını çekelim.
+
+select MusteriAdi
+,SUBSTRING(MusteriAdi
+,CHARINDEX(' ',MusteriAdi)
+,LEN(MusteriAdi)-(charindex(' ',MusteriAdi)-1)) 
+from dbo.Musteriler
+
+
+
+
+
+-- SAYıSAL DEĞER İŞLEMLERI
+
+select 3 + 2
+select 4-2
+select 5*2 
+select 10/2
+
+--Pi sayısını verir.
+select PI()
+
+--- SIN : Sinüs alır.
+select SIN(90)
+
+-- PNER :Üs alır.
+select power(2,3)
+
+-- ABS : Mutlak değer alır.
+select abs(-12)
+
+--RAND: 0 - 1 arasında rastgele sayı üretir.
+Select RAND()
+
+-- FLMR :Yuvarlama yapar.
+select FLOOR(rand()*100)
