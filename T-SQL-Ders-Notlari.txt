@@ -324,7 +324,7 @@ select PI()
 --- SIN : Sinüs alır.
 select SIN(90)
 
--- PNER :Üs alır.
+-- POWER :Üs alır.
 select power(2,3)
 
 -- ABS : Mutlak değer alır.
@@ -333,5 +333,85 @@ select abs(-12)
 --RAND: 0 - 1 arasında rastgele sayı üretir.
 Select RAND()
 
--- FLMR :Yuvarlama yapar.
+-- FLOOR :Yuvarlama yapar.
 select FLOOR(rand()*100)
+
+
+
+-- Tarih Fonksiyonları
+--- GETDATE :Bu günün tarihini verir.
+
+select GETDATE()
+
+-- DATEADO :Verilen tarihe verildiği kadar gün, ay, yıl ekler.
+
+select DATEADD(day,999,getdate())
+
+select DATEADD(month,99,getdate())
+
+select DATEADD(year,9,'5.5.2009')
+
+-- DATEDIFF : İki tarih arasında günü, ayı veya yılı hesaplar.
+
+select DATEDIFF(day,'01.01.2025',getdate())
+select DATEDIFF(day,'06.29.2015',getdate())
+
+select DATEDIFF(month,'08.14.2021',getdate())
+
+select DATEDIFF(year,'02.02.2024',GETDATE())
+
+--- DATEPART :Verilen tarihin haftanın, ayın yahut yılın kaçıncı günü olduğunu hesaplar.
+
+select DATEPART(DW,GETDATE())
+
+select DATEPART(month,getdate())
+
+select DATEPART(day,getdate())
+
+select DATEPART(year,getdate())
+
+
+
+
+Use Northwind
+
+--Top Komutu
+
+select TOP 5 * from Personeller
+
+
+--Distinct Komutu
+
+select Sehir from Personeller
+
+select DISTINCT Sehir from Personeller
+
+
+--Group By Komutu
+
+--Formulize edecek olursak: Normal kolon yanında Aggregate fonksiyon çağrılıyorsa normal kolon Group By ile gruplanır
+
+select PersonelID, count(*) [Yaptığı Satış] from Satislar  GROUP BY PersonelID
+
+select KategoriID,count(*) from Urunler group by KategoriID
+
+select KategoriID,TedarikciID, count(*) from Urunler group by KategoriID,TedarikciID  --Birden fazla kolonu gruplama örneği
+
+select * from Urunler
+
+select * from Satislar
+
+select PersonelID,SUM(NakliyeUcreti) [Toplam Nakilye Ucreti] from Satislar group by PersonelID
+
+--- Group By işleminde Where Şartı Kullanma
+
+select PersonelID, count(*) from Satislar where PersonelID>5 group by PersonelID
+
+select * from Urunler
+
+select UrunAdi, BirimFiyati, count(*) [50 TL ve Uzeri] from Urunler where BirimFiyati>=50 group by UrunAdi,BirimFiyati
+
+---Group By İşleminde Having Komutu Kullanarak şart oluşturma
+--Not: Where komutu ile arasındaki fark: Having aggregate fonksiyon için şart gerekirse yazılır ve groupby komutundan sonra gelir.
+
+select PersonelID, count(*) [Toplam Kayıt] from Satislar where PersonelID>5 group by PersonelID having count(*)>70
