@@ -415,3 +415,23 @@ select UrunAdi, BirimFiyati, count(*) [50 TL ve Uzeri] from Urunler where BirimF
 --Not: Where komutu ile arasındaki fark: Having aggregate fonksiyon için şart gerekirse yazılır ve groupby komutundan sonra gelir.
 
 select PersonelID, count(*) [Toplam Kayıt] from Satislar where PersonelID>5 group by PersonelID having count(*)>70
+
+
+
+
+-- Tabloları Yan Yana Birleştitme
+
+Select * from Personeller
+select * from Satislar
+
+select * from Personeller, Satislar
+
+select p.PersonelID, s.MusteriID from Personeller p , Satislar s
+
+select p.PersonelID,s.PersonelID, count(*) [Toplam Kayıt] from Personeller p,Satislar s where p.PersonelID=s.PersonelID group by p.PersonelID,s.PersonelID
+
+--Yukarıdaki birleştirme örneği ilkel bir yapıdadır. aşağıda Joinleri bu yapıyı baz alarak işleyip  avantajları veya dezavantajlarını inceleyeceğiz
+
+
+
+
