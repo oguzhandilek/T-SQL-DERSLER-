@@ -435,3 +435,66 @@ select p.PersonelID,s.PersonelID, count(*) [Toplam Kayıt] from Personeller p,Sa
 
 
 
+--- Inner Join
+--- Genel Mantık
+--- Select * from Tablo1 Inner Join Tab1o2 on Tablo1.IliskiliKolon=Tablo2.IliskiliKolon
+--- Tablolara alias tanımlanabilir.
+--- Select * from Tablo1 t1 Inner Join Tablo2 t2 on t1.IliskiliKolon=t2.IliskiilKolon
+--- İki Tabloyu İlişkisel Birleştirme
+USE Northwind
+
+--- Hangi personel hangi satışları yapmıştır.(Personeller,Satislar)
+
+select * from Personeller
+select * from Satislar
+
+select p.Adi+' '+p.SoyAdi [Adı Soyadı], s.SevkAdi from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID 
+
+--Hangi ürün hangi kategoride. (Urunler, Kategoriler)
+
+select u.UrunAdi, k.KategoriAdi from Urunler u inner join Kategoriler k on u.UrunID=k.KategoriID
+
+
+--Inner Join'de Where Komutunun Kullanımı
+
+--Beverages kategorisindeki ürünlerim. (Urunler, Kategoriler)
+
+select * from Urunler u inner join Kategoriler k on u.UrunID=k.KategoriID where k.KategoriAdi='Beverages'
+
+--Beverages kategorisindeki ürünlerimin sayısı kaçtır. (Urunler, Kategoriler)
+
+select count(u.UrunAdi) Kayıt from Urunler u inner join Kategoriler k on u.UrunID=k.KategoriID where k.KategoriAdi='Beverages'
+
+--Seafood kategorisindeki ürünlerin listesi (Urunler, Kategoriler)
+
+select u.UrunAdi Urunler from Urunler u inner join Kategoriler k on u.UrunID=u.KategoriID where k.KategoriAdi='Seafood'
+
+--Hangi satışı hangi çalışanım yapmış? (Satislar, Personeller)
+
+select p.Adi+' '+p.SoyAdi [Adı Soyadı], s.SevkAdi from Satislar s inner join Personeller p  on s.PersonelID=p.PersonelID 
+
+--Faks numarası 'null” olmayan tedarikcilerden alınmış ürünler nelerdir? (Urunler,Tedarikciler)
+
+select u.UrunAdi,t.Faks from Urunler u inner join Tedarikciler t on u.TedarikciID=t.TedarikciID where t.Faks<>'Null'
+
+select u.UrunAdi,t.Faks from Urunler u inner join Tedarikciler t on u.TedarikciID=t.TedarikciID where t.Faks is not null
+
+
+
+
+-- - İkiden Fazla Tabloyu İlişkisel Birleştirme
+--- 1997 yılından sonra Nancy nin satış yaptığı firmaların isimleri: (1997 dahil)(Müşteriler, Satislar, Personeller)
+
+select p.Adi, m.SirketAdi from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID inner join Musteriler m on m.MusteriID=s.MusteriID where p.Adi='Nancy' and  Year(s.SatisTarihi)>=1997
+
+-- Limited olan tedarikçilerden alınmış seafood kategorisindeki ürünlerimin toplam satış tutarı. (Urunler , Kategoriler, Tedarikciler)
+
+select Sum(u.BirimFiyati * u.HedefStokDuzeyi) [Toplam Satış Tutarı] from Kategoriler k inner join Urunler u on k.KategoriID=u.KategoriID inner join Tedarikciler t on t.TedarikciID=u.TedarikciID where k.KategoriAdi='Seafood' and t.SirketAdi Like '%Ltd.%'
+
+
+
+-- - Aynı Tabloyu İlişkisel Olarak Birleştirme
+
+-- Personellerimin bağlı olarak çalıştığı kişileri listele? (Personeller, Personeller)
+
+select ast.Adi Ast, ust.Adi Ust from Personeller ust inner join Personeller ast on ust.PersonelID=ast.BagliCalistigiKisi
