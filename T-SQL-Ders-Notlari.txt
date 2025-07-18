@@ -498,3 +498,7 @@ select Sum(u.BirimFiyati * u.HedefStokDuzeyi) [Toplam Satış Tutarı] from Kate
 -- Personellerimin bağlı olarak çalıştığı kişileri listele? (Personeller, Personeller)
 
 select ast.Adi Ast, ust.Adi Ust from Personeller ust inner join Personeller ast on ust.PersonelID=ast.BagliCalistigiKisi
+
+
+-- Inner Joinde Grup By
+
