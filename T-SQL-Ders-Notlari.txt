@@ -502,3 +502,260 @@ select ast.Adi Ast, ust.Adi Ust from Personeller ust inner join Personeller ast 
 
 -- Inner Joinde Grup By
 
+use Northwind
+-- Hangi personelim(adl ve soyadı İle birlikte), toplam kaç adetlik satış yapmış. Satış adedi 100 den fazla olanlar ve personelin adının baş harfi M olan kayıtlar gelsin. (Personeller, Satislar)
+
+select p.Adi+' '+p.SoyAdi [AdıSoyadı], count(s.SatisID) from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID  where p.Adi like 'M%' group by p.Adi+' '+p.SoyAdi having COUNT(s.SatisID)>100 
+
+--- Seafood kategorisindeki ürünlerin sayısı? (Urunler, Kategoriler)
+
+select k.KategoriAdi, count(*) KayitSayisi from Kategoriler k inner join Urunler u on k.KategoriID=u.KategoriID where k.KategoriAdi='Seafood' group by k.KategoriAdi
+
+-- Hangi personelim toplam kaç adet satış yapmış? (Personeller, Sati51ar)
+
+select p.Adi+' '+p.SoyAdi [Adı Soyadı], count(*) [Sattığı Urun Adeti] from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID group by p.Adi+' '+p.SoyAdi
+
+--- En çok satış yapan personelim? (Personeller, Satislar)
+select top 1 p.Adi, COUNT(*) from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID group by p.Adi order by COUNT(*) desc
+
+--- Adında "a” harfi olan personellerin satış id si 10500 den büyük olan satışlarının toplam tutarını(miktar*birimfiyat) ve bu satışların hangi tarihte gerçekleştiğini listele. (Personeller, Satislar, [Satİs Detaylari)
+
+ select convert(nvarchar,day(s.SatisTarihi)) + '.' + convert(nvarchar,month(s.Satistarihi)) + '.' + convert(nvarchar,year(s.Satistarihi)) [Satış Tarihi], SUM(d.Miktar*d.BirimFiyati) [toplam Satış Tutarı] from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID inner join [Satis Detaylari] d on s.SatisID=d.SatisID where p.Adi like '%a%' and s.SatisID>10500 group by s.SatisTarihi order by s.SatisTarihi asc
+
+
+
+
+--Outer Join(Left,Right,Full) ile Tabloları Birleştirme 
+
+use OrnekVT
+INSERT INTO Filmler (Filmid, FilmAdi) VALUES
+(1, 'GORA'),
+(2, 'Lord Of The Rings'),
+(3, 'Düğün Dernek'),
+(4, 'Bir Zamanlar Anadolu''da'),
+(5, 'Kurtlar Vadisi'),
+(6, 'Recep İvedik'),
+(7, 'Düğün Dernek'),
+(8, 'Kahpe Bizans');
+
+select * from Filmler
+
+INSERT INTO Oyuncular (OyuncuId, Filmid, Adi, Soyadi) VALUES
+(1, 1, 'Cem', 'Yılmaz'),
+(2, 2, 'Muiddin', 'İmpatrino'),
+(4, 2, 'Turgay', 'Arslaner'),
+(5, 3, 'Gökhan', 'Aşker'),
+(6, 4, 'Mustafa', 'Ağaoğlu'),
+(7, 4, 'Mustafa', 'Güloğlu'),
+(8, 5, 'Mustafa', 'Nuroğlu'),
+(9, 5, 'M ust4', 'Bilmemneoğlu');
+
+select * from Oyuncular
+
+
+-- Inner Jcin'de eşleşen kayıtlar getiriliyordu. Outer Join 'de ise eşleşmeyen kayıtlarda getirilmektedir.
+
+
+-- Left Join
+-- Join ifadesinin solundaki tablodan tüm kayıtları getirir. Sağındaki tablodan eşleşenleri yan yana eşleşmeyenleri null olarak getirir.
+
+select * from Filmler f left outer join Oyuncular o on f.FilmId=o.FilmID
+select * from Oyuncular o left outer join Filmler f on o.FilmID=f.FilmId
+
+-- veya
+
+select * from Oyuncular o left join Filmler f on o.FilmID=f.FilmId
+select *from Filmler f left join Oyuncular o on f.FilmId=o.FilmID
+
+--Not : outer keyword'ü eskiden kullanılıyordu. Güncel olarak kullanılmasına gerek yok dolayısyla aşağıdaki komutlarda outer keyword'ü yazılmayacak.
+
+--- Right Join
+-- Joinin sağındaki tablonun tamamını getirecek, solundakinden eşleşenleri aynı satırda eşleşmeyenleri de null olarak getirecek.
+
+select * from Oyuncular o right join Filmler f on o.FilmID=f.FilmId
+select* from Filmler f right join  Oyuncular o on o.FilmID=f.FilmId
+
+
+-- Full Join
+--- Joinin iki tarafındaki tablolardan eşleşen eşleşmeyen hepsini getirir.
+select * from Oyuncular o full join Filmler f on o.FilmID=f.FilmId
+
+select * from Filmler f full join Oyuncular o on o.FilmID=f.FilmId
+
+
+
+
+
+--Cross Join 
+-- Cross Join iki tablo arasında kartezyen çarpım sağlar ve sonucu tablo olarqak döndürür.
+--Aşağıdaki örnekte iki farklı tabloyu cross join ile birleştireceğiz. Doğru birleşmenin sağlamasını iki tablonun eleman saysının çarpımı ile doğrulancakatır. Örnek: Personeller Count = 9 Bölge Count =4 9*4=36 adet sonuç döndürmesi gerekiyor.
+use Northwind
+select count(*) from Personeller 
+select count(*) from Bolge
+
+select p.Adi,b.BolgeID from Personeller p cross join Bolge b
+
+--Not:
+--1) Diğer Join komutlarında olduğu gibi ON keyword'ünü kullanmayız. Çünkü kartezyen çarpım ile bütün eşleşmeleri yapıyor.
+--2) Where keyword2ü ile herhangi bir şartta bağlanamaz.
+
+--Örnek :
+--10 öğrenci adayı var ✅
+
+--9 farklı temin tipi var ✅
+
+--Her öğrenci adayı her temin tipini seçebilir (tüm kombinasyonlar gerekir) ✅
+
+--Yani:
+
+--Her öğrenci 9 temin tipinden birini seçebileceği gibi hepsiyle eşleşmesi de ihtimal dahilinde.
+--Sonuç: 10 × 9 = 90 satır
+
+
+
+
+-----DML KOMUTLARINA GİRİŞ----
+
+--DML (Data Manipulation Language)
+---- Select, insert, Update, Delete
+--- Select...
+--- insert ...
+--- Update ...
+--- Delete ...
+
+USE Northwind
+
+--Select 
+Select * from Personeller
+
+
+--Insert 
+-- Insert [Tablo Adı] (Kolonlar) Values(Değerler)
+
+--Kolon adı belirterek ekleme
+insert  Personeller(Adi,SoyAdi) values('Oğuzhan','Dilek') --Kolon adları ile göndereceğiniz values'ler aynı ırada olamalıdır.
+
+--Tüm Kolonlara veri ekleme
+
+insert Personeller values('Dilek','Zehra','Tatlı Bebek','Immm','01.01.2024',GETDATE(),'Ankara','Erzurum','İçAnadolu','0600','Turkiye',null,null,null,null,null,null)
+
+
+--- [Dikkat Edilmesi Gerekenler! ! ! ]
+--- Into Komutu İle Yazılabilir
+insert into Personeller(SoyAdi,Adi) values('Dilek','Sutlaç')
+--- Kolonun kabul ettiği veri tipi ve karakter uzunluğunda kayıt yapılmalıdır.
+--- Not NuII olan kolonlara boş bırakılamayacaklarından dolayı mutlaka değer gönderilmelidir.
+insert Personeller(Unvan,UnvanEki) values ('Doktor','Prof.')
+
+-- Otomatik artan(İdentİty) kolonlara değer gönderilmez.
+-- Tablodaki seçilen yahut bütün kolonlara değer gönderileceği belirtilip, gönderilmezse hata verecektir.
+
+insert Personeller(Adi,SoyAdi) values('Dilek')
+insert Personeller values('Dilek')
+
+---[Pratik Kullanım]
+insert Personeller(Adi,Soyadi) values ('Sulhettin','Kebap')
+insert Personeller(Adi,Soyadi) values ('Murtaza','Yanbakan')
+insert Personeller(Adi,Soyadi) values ('Mugıme','Düzayak')
+
+insert Personeller(Adi,SoyAdi) values ('Sulhettin','Kebap'),
+	('Murtaza','Yanbakan'),
+	('Mugıme','Düzayak')
+	
+	
+	
+--- [insert Komutu İle Select Sorgusu Sonucu Gelen Verileri Farklı Tabloya Kaydetme]
+select * from OrnekPersoneller
+insert OrnekPersoneller select Adi,Soyadi from Personeller
+-- Burada dikkat etmeniz gereken nokta; Select sorgusunda donen kolon sayısı İle insert İşlemi yapılacak tablonun;
+-- 1) kolon sayısı birbirine eşit olması 
+-- 2) tiplerinin aynı olması
+-- 3) Kolon Sırasının aynı olması gerekmektedir.
+-- 4) Kolon isimlerinin dahi aynı olamsı lazım
+
+
+-- [Select Sorgusu Sonucu Gelen Verileri Farklı Bir Tablo Oluşturarak Kaydetme]
+ select Adi,Soyadi,Ulke into OrnekPersoneller2 from Personeller
+ select * from OrnekPersoneller2
+--- Bu yöntemle primary key ve foreign keyler oluşturulamazlar.
+
+
+
+--- Update
+--- Update [Tablo Adı] Set [Kolon Adı] = Değer
+
+use Northwind
+
+update OrnekPersoneller set Adi='Ülkü' where Adi='Zehra' --Eğer where şartı konulmazsa bütün kolunun hepsini set edilen değer ile günceller
+select * from OrnekPersoneller
+
+--- [Update Sorgusunda Join Yapılarını Kullanarak Birden Fazla Tabloda Güncelleme Yapmak]
+select * from OrnekPersoneller
+--Personeller tablsounda 12 ID'li personelin soyadını  OrnekPersoneller tablsonudaki Adı kolnuyla güncelle
+update OrnekPersoneller set Adi= p.SoyAdi from Personeller p inner join OrnekPersoneller o on p.PersonelID=o.PersonelId where p.PersonelID=12
+
+--- [Update Sorgusunda Subquery İle Güncelleme Yapmak)
+
+Update OrnekPersoneller set Soyadi=(Select Adi from Personeller where PersonelID=3) where OrnekPersoneller.Adi='Janet'
+
+--- [Update Sorgusunda Top Keywordü İle Güncelleme Yapmak]
+
+update top (3) OrnekPersoneller set SoyAdi=null
+
+
+--- Delete
+--- Delete from [Tablo Adı ]
+
+--[Delete Sorgusuna Where Şartl Yazmak]
+
+
+Delete From OrnekPersoneller where PersonelId<=3
+select * from OrnekPersoneller
+--- [Dikkat Edilmesi Gerekenler! ! ! ]
+-- Delete sorgusuyla tablo içerisindeki tüm verileri silmeniz identity kolonunu 51 f Irlamayacaktır. Silme işleminden sonra İlk eklenen veride kalındığı yerden id değeri verilecektir.
+delete from OrnekPersoneller where Adi in ('Zehra')
+
+
+
+-- Union | Unİon All
+--- Union Komutu
+--- Birden fazla select sorgusu sonucunu tek seferde alt alta göstermemizi sağlar.
+
+---Aiaşıdaki senaryoda Musteriler tablosundaki ad soyadları alıp SınıfA , Personeller Tablosundaki  ad soyadları alıp SınıfB Tabloları oluşturlacak ve bunları Union ile birleştirip alt alat sıralama yapacağız. bu şeilde Okuladki tüm öğrenci listesi çıkmış olacak
+
+select SUBSTRING(MusteriAdi,0,CHARINDEX(' ',MusteriAdi)) [Adi],SUBSTRING(MusteriAdi,CHARINDEX(' ',MusteriAdi),LEN(MusteriAdi)-(charindex(' ',MusteriAdi)-1))[SoyAdi]  into SinifB from Musteriler
+
+select PersonelID,SoyAdi,Adi into SinifA from Personeller
+
+
+Select  Adi,SoyAdi from SinifA
+Union
+Select Adi,SoyAdi from SinifB
+
+--- 2 'den fazla
+Select  Adi,SoyAdi from SinifA
+Union
+Select Adi,SoyAdi from SinifB
+Union
+Select Adi,SoyAdi from Personeller
+
+--Joinler yan yana, Union alt alta tabloları birleştirir. Joinlerde belirli(ilişkisel) bir kolon üzerinden birleştirme yapılırken, Union 'da böyle bir durum yoktur.
+
+--- Dikkat etmemiz gereken koşullar;
+-- Union sorgusunun sonucunda oluşan tablonun kolon isimleri, üstteki sorgunun kolon İsimlerinden oluşturulur.
+--- Üstteki sorgudan kaç kolon çekilmişse alttaki sorgudan da o kadar çekilmek zorundadır.
+-- Üstteki sorgudan çekilen kolonların tipleriyle, alttaki sorgudan çekilen kolonların tipleri uyumlu olmalıdır.
+--- Union tekrarlı kayıtları getirmez.
+-- Union'da kullanılan tablolara kolon eklenebilir. Dikkat etmemiz gereken nokta, yukarıdaki kurallar çerçevesinde aşağıyada yukarıyada aynı sayıda kolonların eklenmesi gerekmektedir.
+
+
+Select  Adi,SoyAdi,'A Sınıfı' from SinifA
+Union
+Select Adi,SoyAdi,'B Sınıfı' from SinifB
+
+-- Union ALL
+--- Union tekrarlı ka ıtları etirmez. Tekrarlı kat ıtları etir-mek için Union All Komutu kullanılmalıdır.
+
+Select  Adi,SoyAdi from SinifA
+Union All
+Select Adi,SoyAdi from SinifA
