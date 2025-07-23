@@ -212,7 +212,7 @@ select * from dbo.Personeller where Adi like '[^an]%'
 
  select  Adi,Soyadi from dbo.Personeller where SoyAdi like 'n%%' escape 'n'
  
- select  Adi,Soyadi from dbo.Personeller where SoyAdi like 'n%%' escape 'n'
+ select  Adi,Soyadi from dbo.Personeller where SoyAdi like 'n%%' escape 'n' --n kaçışın başlangıç alias gibi düşünebiliriz n den bir sonraki keyword değil demek 
  
  
  
@@ -290,7 +290,7 @@ select REVERSE(Adi) from dbo.Personeller
 
 select REPLACE('Merhaba ben Oğuzhan','Oğuzhan','Zehra') 
 
---CHARZNOEX :Belirtilen karakterin veri içinde sırasını numarasını verir.
+--CHARINDEX :Belirtilen karakterin veri içinde sıra numarasını verir.
 
 select MusteriAdi, CHARINDEX('r',MusteriAdi) from dbo.Musteriler
 
@@ -343,7 +343,7 @@ select FLOOR(rand()*100)
 
 select GETDATE()
 
--- DATEADO :Verilen tarihe verildiği kadar gün, ay, yıl ekler.
+-- DATEADD :Verilen tarihe verildiği kadar gün, ay, yıl ekler.
 
 select DATEADD(day,999,getdate())
 
@@ -362,7 +362,7 @@ select DATEDIFF(year,'02.02.2024',GETDATE())
 
 --- DATEPART :Verilen tarihin haftanın, ayın yahut yılın kaçıncı günü olduğunu hesaplar.
 
-select DATEPART(DW,GETDATE())
+select DATEPART(DW,GETDATE()) --DW: Weekday
 
 select DATEPART(month,getdate())
 
@@ -435,7 +435,7 @@ select p.PersonelID,s.PersonelID, count(*) [Toplam Kayıt] from Personeller p,Sa
 
 
 
---- Inner Join
+--- Inner Join veya Join
 --- Genel Mantık
 --- Select * from Tablo1 Inner Join Tab1o2 on Tablo1.IliskiliKolon=Tablo2.IliskiliKolon
 --- Tablolara alias tanımlanabilir.
@@ -712,7 +712,7 @@ update top (3) OrnekPersoneller set SoyAdi=null
 Delete From OrnekPersoneller where PersonelId<=3
 select * from OrnekPersoneller
 --- [Dikkat Edilmesi Gerekenler! ! ! ]
--- Delete sorgusuyla tablo içerisindeki tüm verileri silmeniz identity kolonunu 51 f Irlamayacaktır. Silme işleminden sonra İlk eklenen veride kalındığı yerden id değeri verilecektir.
+-- Delete sorgusuyla tablo içerisindeki tüm verileri silmeniz identity kolonunu sıfrlamayacaktır. Silme işleminden sonra İlk eklenen veride kalındığı yerden id değeri verilecektir.
 delete from OrnekPersoneller where Adi in ('Zehra')
 
 
@@ -754,8 +754,98 @@ Union
 Select Adi,SoyAdi,'B Sınıfı' from SinifB
 
 -- Union ALL
---- Union tekrarlı ka ıtları etirmez. Tekrarlı kat ıtları etir-mek için Union All Komutu kullanılmalıdır.
+--- Union tekrarlı kayıtları getirmez. Tekrarlı kayıtları getirmek için Union All Komutu kullanılmalıdır.
 
 Select  Adi,SoyAdi from SinifA
 Union All
 Select Adi,SoyAdi from SinifA
+
+
+
+
+-- With Rollup | Wtith Cube
+
+-- With Rollup Group By ile gruplanmış veri kümesinde ara toplam alınmasını sağlar.
+
+Select Sehir,Urun,Sum(SatisMiktari) from Satislar group by Sehir,Urun with rollup
+ --Sadece şehir bazlı toplamlar + genel toplam var.
+
+ --- [Having Şartıyla Beraber With Rollup]
+ Select Sehir,Urun,Sum(SatisMiktari) from Satislar group by Sehir,Urun with rollup having sum(SatisMiktari)>10
+ 
+ 
+ --With Cube Tüm grupların tüm olası kombinasyonlarının toplamlarını verir.
+
+ Select Sehir,Urun,Sum(SatisMiktari) from Satislar group by Sehir,Urun with cube
+ --👉 Hem şehir hem ürün bazlı toplamlar + genel toplam var.
+
+  --- [Having Şartıyla Beraber With Cube]
+ Select Sehir,Urun,Sum(SatisMiktari) from Satislar group by Sehir,Urun with cube having sum(SatisMiktari)>10
+
+
+
+-- Case - When- Else — End
+-- Personellerimizin isim ve soyisimlerinin yanında; UnvanEki 'Mr'İse  Erkek, 'Ms.' ve'Mrs.' ise Kadın  yazsın.
+
+select Adi,SoyAdi,
+Case
+When UnvanEki='Mrs.' or Unvaneki='Ms.' Then 'Kadın'
+When UnvanEki='Mr.' Then 'Erkek'
+Else UnvanEki
+End
+from Personeller
+
+--- Eğer ürünün birim fiyatı 0-50 arası İse 'Çin Malı',	50 -100 arası İse 'Ucuz',	100-200 arası İse 'Normal' ve 200' den fazla İse 'Pahalı' yazsın.
+
+select UrunAdi,
+Case
+When BirimFiyati>0 and BirimFiyati<50 Then 'Çin Malı'
+When BirimFiyati between 50 and 100 Then 'Ucuz'
+When BirimFiyati between 100 and 200 Then 'Normal'
+When BirimFiyati>200 Then 'Pahalı'
+Else 'Belirsiz'
+End
+from Urunler
+
+--Yukarıdaki örnekte bir filtre yapmak istersek o zamanda SubQuery yönremini kullanırdık Yani;
+
+select * from (select UrunAdi,
+Case
+When BirimFiyati>0 and BirimFiyati<50 Then 'Çin Malı'
+When BirimFiyati between 50 and 100 Then 'Ucuz'
+When BirimFiyati between 100 and 200 Then 'Normal'
+When BirimFiyati>200 Then 'Pahalı'
+Else 'Belirsiz'
+End as FiyatGrubu
+from Urunler) as UrunEtiketli
+where FiyatGrubu='Çin Malı'
+
+
+--With Ties Komutu
+-- Bu komut TOP komutu ile birlikte kullananılabilir. amacı Belli sayıda bir sıralama yaparken örneğin  ilk 6 kaydı getirmek istediğimizde 6. kayıta eş değer bir veri varsa onları getirmeyi sağlar. Mesala bir yarışmada ilk 3 kişi belirleriz ancak 3. kişi ilede aynı puanı almış yarışmacılar olabilir. İşte böyle bir istisna durumda with ties komuut bize yardımcı olacaktır.
+
+--With Ties komutu kullanıyorsan sorgunun sonunda ORDER BY'da kullanmak zorundasın
+
+Select * from [Satis Detaylari]
+
+select top 6 with ties * from [Satis Detaylari] order by SatisID
+
+
+--With Komutu
+
+-- WITH komutu (CTE - Common Table Expression),
+-- karmaşık sorguları daha okunabilir hale getirmek için kullanılır.
+-- Geçici bir sonuç kümesi oluşturur ve bu küme, sorgunun devamında sanki bir tablo gibi davranır.
+-- Tek bir kez tanımlanır ve birden fazla kez kullanılabilir (sorgu içinde).
+-- Alt sorgulara göre daha temiz ve modüler bir yapı sunar.
+
+
+With PersonelSatis(id,adi,soyadi,satisId)
+as 
+(
+select p.PersonelID,p.Adi,p.SoyAdi,s.SatisID from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID
+)
+
+--select * from PersonelSatis
+
+select * from PersonelSatis ps inner join [Satis Detaylari] sd on ps.satisId=sd.SatisID
