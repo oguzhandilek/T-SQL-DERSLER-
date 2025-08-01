@@ -830,7 +830,7 @@ Select * from [Satis Detaylari]
 
 select top 6 with ties * from [Satis Detaylari] order by SatisID
 
-
+ 
 --With Komutu
 
 -- WITH komutu (CTE - Common Table Expression),
@@ -849,3 +849,663 @@ select p.PersonelID,p.Adi,p.SoyAdi,s.SatisID from Personeller p inner join Satis
 --select * from PersonelSatis
 
 select * from PersonelSatis ps inner join [Satis Detaylari] sd on ps.satisId=sd.SatisID
+
+
+--- Subquery (iç içe Sorgular)
+-- Önemli Uyarı: Subquery'ile dönen verinin tek satırda olamsı gerekmektedir eğer birden fazla satır dönerse subquey çalışmayacaktır.
+
+select s.SatisTarihi,s.SatisID from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID where p.Adi='Nancy'
+ 
+ select s.SatisTarihi,s.SatisID from Satislar s where s.PersonelID=(select p.PersonelID  from Personeller p where p.Adi='Nancy')
+ 
+ 
+ 
+ --- Bulk insert
+ 
+ --Kisiler.txt
+ -- Ad	Soyad	Unvan
+-- Oğuzhan	Dilek	Full Stack Dev.
+-- Zehra	Dilek	Bebiş
+-- Sütlaç	Dilek	Pişo
+
+bulk insert Kisiler from 'D:\personal-repo\T-SQL-DERSLER-\Kisiler.txt'
+with
+(
+Fieldterminator='\t',
+RowTerminator='\n'
+)
+
+select * from Kisiler
+
+
+--Truncate Komutu
+
+--__Identity kolonunu sıfırlar
+--Test yapıldıktan sonra proje Publish edilemeden önce test verilerini sıfırlamak için kullanılabilir.
+
+select * into PersonellerX from Personeller
+
+truncate table PersonellerX
+
+
+--@@Identity Komuutu
+
+--Son yapılan Insert işleminin Identity değerini bir tabloda getirir
+
+Insert into Kategoriler(KategoriAdi,Tanimi) values ('X','X Kategorisi')
+
+select @@IDENTITY
+
+Insert Personeller(Adi,SoyAdi) values('Husam','Candar')
+
+--@@ROWCOUNT Komutu
+
+--Herhangi bir işlemde (Select, Insert, Update vs) etkilenen kaç değer varsa onu döndürür
+
+Delete from PersonellerX where Adi='Husam'
+Select @@ROWCOUNT
+
+Select * from Personeller
+select @@ROWCOUNT
+
+Insert PersonellerX(Adi,Soyadi) Values('Adam','Smith'),
+										('Muhit','SS')
+										select @@ROWCOUNT
+										
+
+
+--Identity Kolonuna Müdahale etme
+--Önmeli Uyarı Son İdentity değerinde daha yükesk bir değer girlmesi gerekir
+DBCC Checkident(PersonellerX,reseed,27)
+
+
+
+
+--NULL Kontrol Mekanizmaları
+
+-- Bu mekanizmaları null değerleri olan bir tabloda rapor hazırlarken kullanırız.
+
+-- Case-Hhen-Then-E1se-End Kalıbı İle Null Kontrolü
+
+Select MusteriAdi, Bolge, 
+Case
+When Bolge IS NULL then 'Bölge Bilinmiyor'
+else
+Bolge
+End
+ from Musteriler
+
+ ---- Coalesce Fonksiyonu İle Null Kontrolü
+
+ select MusteriAdi, coalesce(Bolge,'Bölge Bilinmiyor')  from Musteriler
+--Null Kontrolü yapılcak olan kolonun tipi ne ise ikinci parametrede o itpte olmalıdır.
+
+ -- IsNull Fonksiyonu İle Null Kontrolü
+
+ select MusteriAdi, isnull(Bolge,'Bolge Bilinmiyor') from Musteriler
+ --Null Kontrolü yapılcak olan kolonun tipi ne ise ikinci parametrede o itpte olmalıdır.
+
+ -- NullIf Fonksiyonu İle Null Kontrolü
+-- Fonksiyona verilen kolon, İkinci parametre verilen değere eşit İse o kolonu Null olarak getirir.
+
+select nullif(1,2);
+select nullif(0,0);
+
+Select HedefStokDuzeyi from Urunler
+Select AVG(HedefStokDuzeyi) from Urunler
+
+--- Hedef stok düzeyi O olmayan ürünlerin ortalaması nedir?
+Select AVG(HedefStokDuzeyi) from Urunler where HedefStokDuzeyi<>0
+select AVG(nullif(HedefStokDuzeyi,0)) from Urunler 
+
+--ONEMLİ RAPORLARDA KESİNİLKLE NULL DEĞERLERİ BOŞ BIRAKMAYIN!!'NULLIFF ile veya diğer fonksiyonlarla bir şekilde belli edin yada hesaptan çıkarılamsını sağlayın. Aksi halde yanlış hesap çarşıdan döner
+
+
+--- T -SQL ile Veritabanındaki Tabloları Listeleme
+
+select * from sys.tables
+
+--ya da
+
+Select * from sysobjects where xtype='u'
+
+
+--- Bir Tablonun Primary Key Olup Olmadığını Kontrol Etme
+
+Select OBJECTPROPERTY(OBJECT_ID('Personeller'),'TableHasPrimaryKey')
+
+-- Eğer sonuç 1 değerini döndürüyrsa o zman tabloda primary key mevcuttur.
+
+
+
+
+
+
+
+
+--DDl (Data Definition Language)
+--- T-SQL de veritabanı nesneleri oluşturmamızı sağlayan ve bu nesneler üzerinde değişiklikler yapnamızı ve silmenizi sağlayan yapılar bu başlık altında simgelenmektedir.
+-- Create, Alter, Drop 
+
+- ---CREATE---
+-- Veritabanı nesnesi oluşturmamızı sağlar.(database,table,view,storedproc,trigger vs.)
+-- Prototipi
+--Create [Nesne] [Nesnenin Adi]
+-- —Create İle Database Oluşturma
+
+Create Database OrnekVeriTabani
+
+--- Bu şekilde bir kullanım varsayılan ayarlarda veritabanı oluşturacaktır.
+
+Create Database OrnekVeriTabani
+on
+(
+	Name='GG',
+	Filename='D:\GG.mdf',
+	Size=5,
+	Filegrowth=3
+)
+-- Name : Oluşturulacak veritabanının fiziksel ismini belirtiyoruz.
+--- Filename : Oluşturulacak veritabanı dosyasının fiziksel dizinini belirtiyoruz.
+--- Size : Veritabanının başlangıç boyutunu mb cinsinden ayarlıyoruz.
+--- Filegrowth : Veritabanının boyutu, başlangıç boyutunu geçtiği durumda boyutun ne kadar artması gerektiğini mb cinsinden belirtiyoruz.
+
+
+-- —Create İle Log Dosyasıyla Birlikte Database Oluşturma
+
+Create Database OrnekVeriTabani
+on
+(
+	Name='GG',
+	Filename='D:\GG.mdf',
+	Size=5,
+	Filegrowth=3
+)
+Log
+on
+(
+	Name='GG_LOG',
+	Filename='D:\GG.ldf',
+	Size=5,
+	Filegrowth=3
+)
+
+-- —Create İle Tablo Oluşturma
+USE OrnekVeriTabani
+
+Create Table tablo1
+(
+	Kolon1 int,
+	Kolon2 nvarchar(max),
+	Kolon3 money
+)
+
+--- Eğer kolon adlarında boşluk varsa köşeli parantez ile belirtilmelidir.
+
+Create table tablo2
+(
+	[Kolon 1] int,
+	[Kolon 2] nvarchar(50),
+	[Kolon 3] money
+)
+
+--- —Kolona Primary Key ve Identity özelliği Kazandırmak
+
+create table Tablo3
+(
+	Id int Primary key Identity (1,1),
+	Kolon2 nvarchar(20)
+)
+
+
+
+---ALTER-----
+-- Create ile oluşturulan veritabanı nesnelerinde değişiklik yapmamızı sağlar.
+-- Prototip
+-- Alter [Nesne] [Nesnenin Adi]
+-- (Yapıya Göre İşlemler)
+
+-- —Alter İle Database Güncelleme
+
+Alter Database OrnekVeriTabani
+Modify File
+(
+	Name='GG', --Name' i GG olan veritabanına göre işem ayapar aslında burada bir where var
+	Size=20
+)
+
+--- —Alter İle Olan Bir- Tablo 8 Kolon Ekleme
+
+Alter Table tablo1
+Add Kolon5 nvarchar(max)
+
+
+--- Alter- İle Tablodaki Kolonu Güncelleme
+Alter table tablo1
+Alter Column Kolon4 int
+--Not kolonda veri olmaması gerkiyor
+
+-- —Alter İle Tablodaki Kolonu Silme
+Alter Table tablo1
+Drop Column Kolon4
+
+-- —Alter İle Tabloya Constraint Ekleme
+
+Alter Table tablo1
+Add Constraint OrnekConstraint Default 'boş' for Kolon2
+
+-- —Alter İle Tabloya Constraint Silme
+
+Alter Table tablo1
+Drop Constraint OrnekConstraint 
+
+
+
+-- SP_RENAME ile tablo adı Güncelleme
+
+SP_RENAME 'tablo1','OrnekTablo'
+
+
+-- SP_RENAME ile Kolon adı  Güncelleme
+
+SP_RENAME 'OrnekTablo.Kolon1','Id','Column'
+
+-- Create İle oluşturulan veri tabanı nesnelerini silmemize yarar.
+-- Prototip
+--- Drop [Nesne] [Nesne Adı]
+Drop table OrnekTablo
+Drop Database OrnekVeriTabani
+
+
+
+
+
+-- Constraintler (Kısıtlayıcılar)
+-- Constraintler sayesinde tablolar üzerinde istediğimiz şartlar ve durumlara göre kısıtlamalar yapabiliyoruz.
+--DEFAULT CONSTRAINT
+--CHECK CONSTRAINT
+--PRİMARY KEY CONSTRAINT
+--UNIQUE COUSTRAINT
+--FOREIGN KEY CONSTRAINT 
+
+
+--- DEFAULT CONSTRAINT
+--- Default Constraİnt sayesinde kolona bir değer girilmediği taktirde varsayılan olarak ne girilmesi gerektiğini belirtebiliyoruz.
+---- Genel Yapısı;
+--- Add Constraint [Constraint Adı ] Default 'Varsayılan Değer' For [Kolon Adı]
+
+create table OrnekTablo
+(
+Id int primary key identity(1,1),
+Kolon1 nvarchar(max),
+Kolon2 int
+)
+
+Alter Table OrnekTablo
+Add Constraint Kolon1Constraint Default 'Bilgi Yok' For Kolon1
+
+Alter Table OrnekTablo
+Add Constraint Kolon2Constraint Default -1 For Kolon2
+
+
+insert OrnekTablo(Kolon2) values(0)
+insert OrnekTablo(Kolon1) values('Örnek bir değer')
+
+select * from OrnekTablo
+
+
+--CHECK CONSTRAİNT
+-- Bir kolona girilecek olan verinin belirli bir şarta uymasını zorunlu tutar.
+--- Genel Yapısı;
+-- Add Constraint [Constraint Adı] Check (ŞART)
+
+Alter table OrnekTablo
+Add Constraint Kolon2Kontrol Check ((Kolon2*5)%2=0)
+
+-- Check ccnstraint oluşturulmadan önce ilgili tabloda şarta aykırı değerler varsa eğer	constraint oluşturulmayacaktır !
+-- Ancak önceki kayıtları görmezden gelip genede Check Constraintİ uygulamak İstiyorsak	"Wİth Nocheck" komutu kullanılmalıdır.
+-- Wİth Nocheck Komutu
+--- Şuana kadar olan kayıtları görmezden gelip, check constrainti uygulattırır.
+
+Alter table OrnekTablo
+--Drop Constraint Kolon2Kontrol
+With Nocheck Add Constraint Kolon2Kontrol Check ((Kolon2*5)%2=0)
+
+---PRIMARY KEY CONSTRAINT
+--- Primary Key Constraint ile; o kolona eklenen primary key ile, başka tablolarda foreign key oluşturarak ilişki kurmamız mümkün olur.
+--Bunun yanında o kolonun taşıdığı verinin tekil olacağı da garanti edilmiş olur. Primary key constraint İle ayrıca CLUSTERED index oluşturulmuş da olur.
+---- Genel Yapısı;
+--- Add Constraint [Constraint Adı] Primary Key (Kolon Adı)
+
+--DİKKAT!!!
+-- Primary Key Constraint kullanılan kolon primary key özelliğine sahip olmamalıdır.
+
+Alter table Ornektablo
+Add Constraint PrimaryId Primary key (Id)
+
+
+-- UNIQUE CONSTRAINT
+-- Unique constraintin tek amacı, belirttiğimiz kolondaki değerlerin tekil olmasını sağlamaktır.
+-- Genel Yapısı;
+--- Add Constraİnt [Constraİnt Adı] Unique (Kolon Adı)
+
+Alter table Ornektablo
+Add Constraint OrnekTabloUnique Unique (Kolon2)
+--"Kolon2" kolonuna unique constraint verilerek tekil hale getirilmiştir. Bundan sonra ikitane aynı veriden kayıt yapılamamaktadır.
+
+--- FOREIGN KEY CONSTRAINT
+-- Tabloların kolonları arasında ilişki kurmamızı sağlar. Bu ilişki neticesinde; foreign key olan kolondaki karşılığının boşa düşmemesi İçin primary key kolonu olan tablodan veri silinmesini, güncellenmesini engeller.
+-- Genel Yapısı;
+--- Add Constraint [Constraint Adı] Foreign Key (Kolon Adı) References [2. Tablo Adı] (2. Tablodaki Kolon Adı)
+
+
+create table Ogrenciler
+(
+OgrenciId int primary key identity(1,10),
+DersId int,
+Adi nvarchar(50),
+Soyadi nvarchar(50)
+)
+create table Dersler
+(
+DersId int primary key identity(1,1),
+DersAdi nvarchar(50)
+)
+
+Alter table Ogrenciler
+Add Constraint ForeignKeyOgrenciDers Foreign key (DersId) References Dersler(DersId)
+
+--- Şu durumda, delete ve update İşlemlerinden İlişkili kolondaki veriler etkilenmez.
+-- Davranışı değiştirmek için aşağıdaki komutlar kullanılır.
+
+--- -Cascade
+---- Ana tablodaki kayıt silindiğinde ya da güncellendiğinde, İlişkili kolondaki karşılığıda otomatik olarak silinir ya da güncellenir.
+
+Alter Table Ogrenciler
+Add Constraint ForeingKeyOgrenciDers Foreign Key (DersId) References Dersler(DersId)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+
+--- —Set Null
+---- Ana tablodaki kayıt silindiğinde ya da güncellendiğinde, ilişkili kolondaki karşılığına "Null" değer basılır.
+Alter table Ogrenciler
+add Constraint ForeignKeyOgrenciDers  Foreign Key (DersId) References Dersler(DersId)
+ON Delete Set Null
+ON Update Set Null
+
+--- -Set Default
+---- Ana tablodaki kayıt silindiğinde ya da güncellendiğinde, ilişkili kolondaki karşılığına o kolonun default değeri basılır. Bu default değer dediğimiz default tipte bir constrainttir. Bunu kendimiz oluşturabiliriz.
+
+Alter Table Ogrenciler
+Add Constraint SetDefaultConstraint Default -1 For DersId
+
+Alter Table Ogrenciler
+Add Constraint ForeignKeyOgrenciDers Foreign key (DersId) References Dersler(DersId)
+On Delete Set Default
+On Update Set Default
+
+--Dikkat !! Default değer aana tablodaki kaynağa göre olamlıdır . yukarıdaki örnekte Dersıd içinde -1 değeri bulunmadığı için hata verecektir.
+
+---- Bu ayarlar verilmediği taktirde "no action" özelliği geçerlidir.
+
+
+
+
+--Değişkenler
+-- Declare keywordü İle Değişken tanımlanır.
+-- Prototip;
+--- Declare @DegiskenAdi DegiskenTipi
+
+declare @x int
+
+declare @y nvarchar(50)
+
+declare @z money
+
+declare @x int, @y money, @z bit
+
+declare @Yas int=3
+
+
+-- Tanımlanmış Değişkenlere Değer Atama
+
+declare @Adi nvarchar(50)='Zehra'
+
+declare @x int
+
+--SET
+
+Set @x=125
+
+declare @tarih datetime
+
+Set @tarih=GETDATE()
+
+
+-- Değişken Değeri Okuma
+
+declare @x int
+set @x=3
+select @x
+print @x
+
+--Sorgu Sonucu Gelen Verileri Değişkenle Elde Etme
+
+declare @Adi nvarchar(max), @Soyadi nvarchar(max)
+Select @Adi=Adi,@Soyadi=SoyAdi  from Personeller where  PersonelID=1
+Print @Adi+ ' ' + @Soyadi
+-- 1. Sorgu sonucu gelen satır sayısı bir adet olmalıdır.
+-- 2. Kolonlardaki verilerin tipleri ne ise c verileri temsil edecek değişkenlerin tipleride benzer olmalıdır.
+
+
+
+
+
+
+--Batch Kavramı - Go
+-- yazılan kodları farklı iş parcçacıklarına ayrıldığını compailer'a ifade eden keyworddür.
+
+Create Database OrnekDatabase
+Use OrnekDataBase
+Create Table OrnekTable
+(
+ Id int primary key identity (1,1),
+ Adi nvarchar(max),
+ Soyadi nvarchar(max)
+)
+
+Insert Into OrnekTable Values('Oğuzhan','Dilek')
+Select * from OrnekTable
+
+
+
+
+
+--IF Yapısı
+
+-- = : Eşitse
+-- <> : Eşit Değilse
+-- > : Büyüktür
+-- < : Küçüktür
+
+--Tek Satırlık Çalışma
+
+Declare @Isim nvarchar(max)
+Set @Isim='Dilek'
+
+if @Isim='Dilek'
+	print 'Evet'
+Else
+	Print 'Hayır'
+
+-- Begin-End Yapısı (Scope)
+--Koşu sonucu birden fazla işlem yapılacaksa Begin_end ile scoplanır.
+declare @Sayi1 int=2, @Sayi2 int=5
+
+if @Sayi1> @Sayi2
+	Begin
+		print 'Evet Sayı1 Sayı2 den Büyüktür'
+		select @Sayi1 [Sayı 1], @Sayi2 [Sayı 2]
+	End
+Else
+	Begin
+		print 'Hayır Sayı1 Sayı2 den küçüktür'
+		select @Sayi1 [Sayı 1], @Sayi2 [Sayı 2]
+	End
+
+--Örnek 1
+--- Müşteriler tablosunda Amerikalı (USA) müşteri var mı?
+Use Northwind
+select * from Musteriler where Ulke='USA'
+if @@ROWCOUNT>0 
+	print 'Evet'
+Else
+	Print 'Hayır'
+
+---- Örnek 2
+--- Adı 'Oğuzhan'
+--soyadı 'Dilek' olan Personel var mı? Varsa evet var desin. Yoksa kaydetsin.
+
+Use Northwind
+Declare @adi nvarchar(max)='Rumeysa', @soyadi nvarchar(max)='Dilek'
+Select * from Personeller where Adi=@adi and SoyAdi=@soyadi
+if @@ROWCOUNT>0
+	print 'Evet Var'
+Else
+	Begin
+	insert into Personeller(Adi,Soyadi) values(@adi,@soyadi)
+	print 'hayır yok ama eklendi'
+	End
+
+--- If-Else If- Else Yapısı
+
+declare @adi nvarchar(max)='Oğuzhan', @Yas int=33
+
+if @adi='Mahmut'
+	print 'evet'
+Else if @Yas>24
+	print 'Evet yaşı 24-ten büyük'
+Else
+	print 'hayır'
+
+
+
+-- Exists Fonksiyonu
+--Sorgu sonucu tablonun dolu mu boş mu olduğunu döndüren fonksiyondur
+
+if Exists(Select * from Personeller)
+	print 'True'
+Else 
+	Print 'False'
+	
+
+--While Döngüsü
+
+-- While Şart Komutu
+
+declare @sayi int =0
+
+while @sayi<=100
+	Begin
+		print @sayi
+		set @sayi=@sayi+1
+	End
+
+
+--While Döngüsü
+
+-- Break Komutu
+
+declare @sayi int =0
+
+while @sayi<=100
+	Begin
+		print @sayi
+		set @sayi=@sayi+1
+		if @sayi%5=0
+		break
+	End
+	
+	--While Döngüsü
+
+-- Contiune Komutu
+
+declare @sayi int =0
+
+while @sayi<=100
+	Begin
+		if @sayi%5=0
+			begin
+				set @sayi=@sayi+1
+				continue
+		end
+		print @sayi
+		set @sayi=@sayi+1
+	
+	End
+	
+	
+	
+--- Geçici Tablolar - Temporary Tables
+
+-- Genellikle bir SQL Server üzerinde farklı lokasyonlarda birden fazla kişinin çalıştığı durumlarda ya da verilerin test amaçlı geçici bir yerlerde tutulması, işlenmesi amacıyla kullanılan yapılardır.
+--- Bilinen tablo yapısının aynısını sağlarlar. Tek farkları fiziksel olarak oluşmazlar. Sadece bellekte geçici olarak oluşturulurlar.
+--- Select, insert, Update ve Delete işlemleri yapılabilir. İlişki kurulabilir.
+-- Sunucu kapatıldığında ya da oturum sahibi oturumu kapattığında bellekten silinirler.
+
+
+--- #Bir Tabloyu Fiziksel Olarak Kopyalama
+
+Select * Into GeciciPersoneller from Personeller
+--- Bu şekilde bir kullanımda sadece primary key ve foreign key constraintler oluşturulmazlar. Geri kalan herşey birebir fiziksel olarak oluşturulur.
+
+--- *Bir Tabloyu # İfadesi İle Belleğe Geçici Olarak Kopyalama
+
+select * into #GeciciPersoneller from Personeller
+
+select * from #GeciciPersoneller
+insert into #GeciciPersoneller(Adi,SoyAdi) values('Deli','Dolu')
+Delete #GeciciPersoneller where Adi='Deli'
+Update #GeciciPersoneller set SoyAdi='Manyak' where Adi='Oğuzhan'
+
+--- Geçici tablo üzerinde her türlü işlemi yapabiliyoruz I
+---- # ile oluşturulan tablo, o an SQL Serverda oturum açmış kişinin sunucu belleğinde oluşur.
+--- Sadece oturum açan şahıs kullanabilir.
+--- Eğer oturum açan şahıs SQL Servardan disccnnet olursa bu tablo bellekten silinir.
+
+
+
+-- *Bir Tabloyu ## İfadesi İle Belleğe Geçici Olarak Kopyalama
+
+select * into ##GeciciPersoneller from Personeller
+
+insert into  ##GeciciPersoneller(Adi,SoyAdi) values('Deli','Dolu')
+Delete ##GeciciPersoneller where Adi='Deli'
+Update ##GeciciPersoneller set SoyAdi='Manyak' where Adi='Oğuzhan'
+select * from ##GeciciPersoneller
+
+--- ## ile oluşturulan tablo, o an SQL Servarda oturum açmış kişinin sunucu belleğinde oluşur.
+---- Bu tabloyu oturum açan şahıs ve onun SQL Servarına dışardan ulaşan 3. şahıslar kullanabilir.
+--- Eğer oturum açan şahıs SQL Servardan disccnnet olursa bu tablo bellekten silinir.
+--- Diğer bütün özellikleri # İle oluşturulan tablo İle aynıdır.
+
+
+-- Uniqueidentifier Veri TİPİ
+-- inti varchar vs. gibi bir veri tipidir.
+--- Aldığı değer, rakamlar ve harflerden oluşan çok büyük bir sayıdır.
+-- Bundan dolayı bu kolona aynı değerin birden fazla gelmesi neredeyse imkansızdır.
+--- O yüzden tekil bir veri oluşturmak için kullanılır.
+
+USe OrnekVeriTabani
+create table ornektable
+(
+Id int primary key identity(1,1),
+FirstName nvarchar(50),
+MailCode uniqueidentifier 
+
+)
+
+--NEWID() Fonksiyonu
+insert into ornektable values('Oğuzhan',NEWID())
+
+select * from ornektable

@@ -1,0 +1,4 @@
+Ad	Soyad	Unvan
+Oğuzhan	Dilek	Full Stack Dev.
+Zehra	Dilek	Bebiş
+Sütlaç	Dilek	Pişo
