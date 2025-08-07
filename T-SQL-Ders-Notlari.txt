@@ -1509,3 +1509,50 @@ MailCode uniqueidentifier
 insert into ornektable values('Oğuzhan',NEWID())
 
 select * from ornektable
+
+
+
+
+---- View Yapısı
+--Kullanım
+--Genellikle karmaşık sorguların tek bir sorgu üzerinden çalıştırılabilmesidir.
+---- Bu amaçla raporlama işlemlerinde kullanılabilirler.
+--- Aynı zamanda güvenlik ihtiyacı olduğu durumlarda herhangi bir sorgunun 2. - 3. şahıslardan gizlenmesi amacıyla da kullanılırlar.
+--- Genel Özellikleri
+--Herhangi bir sorgunun sonucunu tablo olarak ele alıp, ondan sorgu çekilebilmesini sağlarlar.
+---- ***Önemli***insert, Update ve Delete yapabilirler. Bu işlemleri fiziksel tabloya yansıtırlar. 
+---- View yapıları fiziksel olarak oluşturulan yapılardır.
+---- View yapıları normal sorgulardan daha yavaş çalışırlar.
+--Dikkat !
+---- Database elemanlarını Create komutuyla oluşturuyorduk. View yapısıda bir database yapısı olduğu İçin Create komutu İle oluşturacağız.
+
+Create View vw_Gotur
+As
+Select p.Adi+' '+p.SoyAdi [Adı Soyadı],k.KategoriAdi [Kategori Adı], COUNT(s.SatisID) [Toplam Satış] from Personeller p inner join Satislar s on p.PersonelID=s.PersonelID
+							inner join [Satis Detaylari] sd on s.SatisID=sd.SatisID
+							inner join Urunler u on sd.UrunID=u.UrunID
+							inner join Kategoriler k on k.KategoriID=u.KategoriID
+							group by p.Adi+' '+p.SoyAdi, k.KategoriAdi 
+
+select * from vw_Gotur
+
+select * from vw_Gotur where [Adı Soyadı] Like '%Robert%'
+
+-- View oluşturulurken kolonlara verilen aliaslar View'den sorgu çekilirken kullanılır.
+-- Bir yandan da view'ın kullandığı gerçek tabloların kolon isimleri, View içinde alias tanımlanarak gizlenilmiş olunur.
+-- View içinde "order by- kullanılamaz.
+--"Order By" view içinde değil, view çalışırken sorgu esnasında kullanılmalıdır.
+Select * from vw_Gotur order by [Toplam Satış]
+-- Yok eğer İllaki ben View İçinde "order by" kullanacağım diyorsanız View içinde "top" korutunu kullanmalısınız.
+--- Bu durun çokta tavsiye edilen bir durum değildir.
+
+-- View üzerinde insert. Delete ve Update yapılabilir. Bu işlemler fiziksel tabloya yansıtılmaktadırlar.
+
+Create View OrnekViewPersoneller
+As
+Select Adi,SoyAdi,Unvan from Personeller
+
+Insert Into OrnekViewPersoneller(Adi,SoyAdi,Unvan) values('Faruk','Aslan','Senior DEV')
+Update OrnekViewPersoneller set SoyAdi='Karaslan' where SoyAdi='Aslan'
+Delete OrnekViewPersoneller where SoyAdi='Karaslan'
+Select * from Personeller
