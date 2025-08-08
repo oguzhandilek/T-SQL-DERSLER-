@@ -1556,3 +1556,249 @@ Insert Into OrnekViewPersoneller(Adi,SoyAdi,Unvan) values('Faruk','Aslan','Senio
 Update OrnekViewPersoneller set SoyAdi='Karaslan' where SoyAdi='Aslan'
 Delete OrnekViewPersoneller where SoyAdi='Karaslan'
 Select * from Personeller
+
+--- Wİth Encryptİon Komutu
+--- Eğer yazdığımız view'in kaynak kodlarını, Object Explorer penceresinde "Views" kategorisine sağ tıklayarak Design Mdda açıp
+--görüntülenmesini istemiyorsak "With Encryption" komutu İle Viewi oluşturmalıyız.
+--- Dikkat !
+--"With Encryption" işleminden sonra vİew'İ oluşturan kişide dahil kimse komutları göremez. Geri dönüş yoktur. Ancak view'i oluşturan şahsın komutların yedeğini bulundurması gerekmektedir. Ya da "With Encryption" olmaksızın view yapısını yeniden alterlamalıyız.
+--- Dikkat !
+--- Bir dikkat etmemiz gereken nokta da "With Encryption" ifadesini "as" keywordünden önce yazmalıyız.
+
+create view OrnekViewPersoneller 
+With Encryption
+as
+Select Adi,SoyAdi,Unvan from Personeller
+--- Bu işlemi yaptıktan sonra Design Modu kapatılmıştır.
+
+
+---- Wİth Schemabinding Komutu
+--- Eğer view'in kullandığı esas fiziksel tabloların kolon isimleri bir şekilde değiştirilir, kolonları silinir ya da tablo yapısı bir şekilde değişikliğe uğrar ise vİew'İn çalışması artık mümkün olmayacaktır.
+---- View'in kullandığı tablolar ve kolonları bu tarz işlemler yapılabilmesi ihtimaline karşı koruma altına alınabilir.
+---- Bu koruma "With Schemabinding" komutu ile yapılabilir.
+--"With Schemabinding" ile view Create ya da Alter edilirken, view'in kullandığı tablo, schema adıyla birlikte verilmelidir. örneğin, dbo(database owner) bir şema adıdır. Şemalar C#'takİ namespaceler gibi düşünülebilir.
+----"With Schemabinding" konutuda "As" keywordünden önce yazılmalıdır.
+
+Create Table OrnekTablo
+(
+ Id int primary key identity(1,1),
+ FirstName nvarchar(50),
+ Kolon int
+)
+
+Create View OrnekViewTablo
+With Schemabinding
+as
+Select Id,FirstName,Kolon from dbo.OrnekTablo
+
+Alter Table OrnekTablo
+Alter Column Kolon nvarchar(50)
+
+
+--- With Check Option Komutu
+-- View'in içerisindeki sorguda bulunan şarta uygun kayıtların insert edilmesine müsade edilip, uymayan kayıtların müsade edilmemesini sağlayan bir konuttur.
+
+--"With Encryption" ve "With Schemabinding" komutları "As" keywordünden önce belirtilirken "With Check Option" komutu where şartından sonra belirtilmelidir.
+
+Create View OrnekViewTabo2
+As
+Select Id,FirstName,Kolon from OrnekTablo where FirstName like'A%'
+With Check Option
+
+Insert OrnekViewTabo2 values('Oğuzhan',1) --Eklenemez
+
+Insert OrnekViewTabo2 values('Ahmet',1)--Eklendi
+
+
+
+
+
+
+
+
+
+--- Functions - Scalar Function - inline Function
+
+--T -SQL 'de iki tip fonksiyon vardır.
+--Scalar Fonksiyonlar Geriye istediğimiz bir tipte değer gönderen fonksiyon.
+--- inline Fonksiyonlar Geriye tablo gönderen fonksiyon.
+
+--Bu her iki fonksiyonda fiziksel olarak veritabanında oluşturulmaktadır.
+--Create komutu ile oluşturulmaktadır.
+--- Üzerinde çalışılan database'in Programmability -> Functions kombinasyonundan oluşturulan fonksiyonlara erişebilmekteyiz.
+
+
+--— 1. Scalar Function —
+---- Fonksiyon Tanımlama
+--- Scalar fonksiyonlara tanımlandıktan sonra Programmability Functions Scalar- valued Functions kombinasyonundan erişilebilir.
+USE Northwind
+Create Function Topla(@Sayi1 int, @Sayi2 int) Returns int 
+As
+	Begin
+		return @Sayi1 + @Sayi2
+	End
+--Oluşturulan bu fonksiyonu düzeltmek isterseniz Programmability->Sclar-valued Functions klasöründen ismin üzerine gelip sağ tıklayınca Modify seçilerek düzeltme yapılabilir.
+
+--- Fonksiyon Kullanımı
+--- Fonksiyonu kullanırken şemasıyla beraber çağrılmalıdır.
+
+select dbo.Topla(2,1)
+print dbo.Topla(3,5)
+
+--Örnek
+--"Northwind” veri tabanında; herhangi bir ürünün %18 KDV dahil olmak üzere toplam maliyetini getiren fonksiyonu yazalım.
+
+Create Function Maliyet(@BirimFiyati int, @StokMiktari int) Returns nvarchar(max)
+As
+	Begin
+		declare @sonuc int=@BirimFiyati*@StokMiktari*1.18
+		return @sonuc
+	End
+Select dbo.Maliyet(10,20)
+
+
+--2. inline Function
+--- Geriye bir değer değil, tablo gönderen fonksiyonlardır.
+--Geriye tablo göndereceği için bu fonksiyonlar çalıştırılırken sanki bir tablodan sorgu çalıştırılır gibi çalıştırılırlar. Bu yönleriyle viewlara benzerler. View ile yapılan işlevler inline Functions • lapla yapılabilir.
+--Genellikle viewle benzer işlevler için View kullanılmasını öneririm.
+
+--- Fonksiyon Tanımlama
+--- inline fonksiyonlara tanımlandıktan sonra Programmability -> Functions->Table-valued Functions kombinasyonundan erişilebilir.
+--Dikkat !
+--- inline Function oluşturulurken Begin End yapısı kullanılmaz.
+
+Create Function fc_Gonder(@Ad nvarchar(20), @Soyad nvarchar(20)) Returns Table
+As
+	return Select Adi,Soyadi from Personeller where Adi=@Ad and SoyAdi=@Soyad
+
+--Fonksiyon Kullanımı
+--- Fonksiyonu şemasıyla birlikte çağırmak gerekmektedir.
+select * from dbo.fc_Gonder('Oğuzhan','Dilek')
+
+
+---- Fonksiyonlarda With Encryption Komutu
+--Eğer ki yazmış olduğumuz fonksiyonların kodlarına 2. 3. şahısların erişimini engellemek istiyorsak ”With Encryption" komutunu kullanmalıyız.
+--”With Encryption” işleminden sonra fonksiyonu oluşturan kişide dahil kimse komutları göremez. Geri dönüş yoktur. Ancak fonksiyonu oluşturan şahsın komutların yedeğini bulundurması gerekmektedir. Ya da "With Encryption” olmaksızın fonksiyonu yeniden alterlamalıyız.
+--"With Encryption" "As" key wordünden önce kullanılmalıdır.
+
+Create function OrnekFunc() Returns int
+With Encryption
+As
+	Begin
+	return 3
+	End
+Go
+Select dbo.OrnekFunc()
+
+Create function OrnekFunc2() Returns Table
+With Encryption
+As
+	Return select * from Personeller
+
+select * from dbo.OrnekFunc2()
+
+--Encryption ettiğimiz fonksiyonları Alter ile Encryption'larını kaldıryoruz
+
+Alter Function OrnekFunc() Returns int
+as
+	Begin
+		return 3
+	End
+
+Alter function OrnekFunc2() Returns Table
+As
+	return Select * from Personeller
+
+
+---- Otomatik Hesaplanabilir Kolonlar - Computed Column
+--- Herhangi bir kolonda fonksiyon kullanılarak otomatik hesaplanabilir kolonlar
+--(Computed Column) oluşturmak mümkündür.
+
+Create function Topla(@Sayi1 int, @Sayi2 int) returns int
+as
+	Begin
+		return @Sayi1+@Sayi2
+	End
+Select UrunAdi, dbo.Topla(BirimFiyati,HedefStokDuzeyi) HesapnamisKolon  from Urunler
+--Örnek:
+--Çıktı olarak "_____kategorisindeki ____ürününün toplam fiyatı __' dır. "şeklinde bir çıktı veren fonksiyonu yazalım.
+Create function Rapor(@Kategori nvarchar(max),@UrunAdi nvarchar(max), @BirimFiyati int, @Stok int) Returns nvarchar(max)
+As
+	Begin
+		declare @Cikti nvarchar(max) = @Kategori + ' kategorisindeki ' + @UrunAdi + ' ürünün toplam fiyatı ' + CAST(@BirimFiyati*@Stok as nvarchar(max)) + 'dır.'  
+		return @Cikti
+	End
+
+Select dbo.Rapor(k.KategoriAdi,u.UrunAdi,u.BirimFiyati,u.HedefStokDuzeyi) From Urunler u join Kategoriler k on u.UrunID=k.KategoriID
+
+
+
+
+
+
+
+
+----- Stored Procedures (Saklı Yordamlar)
+------ Genel Özelliklerı
+
+----Normal sorgulardan daha hızlı çalışırlar.
+----Çünkü normal sorgular Execute edilirken "Execute Plan” işlemi yapılır. Bu işlem sırasında hangi tablodan veri çekilecek, hangi kolonlardan gelecek, bunlar nerede v.s gibi işlemler yapılır. Bir sorgu her çalıştırıldığında bu işlemler aynen tekrar tekrar yapılır. Fakat sorgu Stored Procedure olarak çalıştırılırsa bu işlem sadece bir kere yapılır ve o da ilk çalıştırma esnasındadır. Diğer çalıştırmalarda bu işlemler yapılmaz. Bundan dolayı hız ve performansta artış sağlanır.
+----İçerisinde Select, insert, Update ve Delete işlemleri yapılabilir.
+----iç içe kullanılabilir.
+----İçlerinde fonksiyon olutşrulabilir.
+----- Sorgularımızın dışarıdan alacağı değerler parametre olarak Stored Procedure' lere geçirilebildiğinden dolayı, sorgularımızın "SQL Injection” yemelerinide önlemiş oluruz. Bu yönleriyle de daha güvenlidirler.
+----- Stored Procedure fiziksel bir veritabanı nesnesidir. Haliyle Create komutu ile oluşturulur.
+----- Fiziksel olarak ilgili veritabanının "Programmability” "Stored Procedures" kombinasyonundan erişilebilirler.
+
+--Prototip -
+--- Create Proc ya da Procedure [İsim]
+--(
+--varsa parametreler
+--)
+--yazılacak sorgular, kodlar, şartlar,fonksiyonlar,komutlar
+
+
+
+-- Stored Procedure Tanımlama
+
+Create Proc sp_Ornek
+(
+	@Id int --Aksi söylenmediği taktirde bu parametrenin yapısı inputtur.
+)
+As
+Select * from Personeller where PersonelID=@Id
+--Dikkat !
+--- Prosedürün parametrelerini tanımlarken parantez kullanmak zorunlu değildir ama okunabilirliği arttırmak için kullanmakta fayda vardır.
+
+Create Procedure sp_Ornek2
+	@Id int,
+	@Parametre1 int,
+	@Parametre2 nvarchar(max)
+As
+Select * from Personeller where PersonelID=@Id
+
+---- Stored Procedure Kullanımı
+--- Stored Procedure yapılarını "Exec" komutu eşliğinde çalıştırabilmekteyiz.
+
+Exec sp_Ornek 3
+
+Exec sp_Ornek2 4,4,'ASD'
+
+
+-- Geriye Değer Döndüren Stored Procedure Yapısı
+
+Create Proc urunGetir
+(
+	@Fiyat money
+)
+As
+Select * from Urunler where BirimFiyati>@Fiyat
+Return @@Rowcount
+
+--Kullanımı
+Exec urunGetir 40
+--Bu şekilde geriye dönülen değeri elde etmeksizin kullanılabilir. Sıkıntı olmaz.
+
+Declare @Sonuc int
+Exec @Sonuc=urunGetir 40
+print CAST(@Sonuc as nvarchar(max))+ ' adet ürün işlemden etkilenmişitr'
