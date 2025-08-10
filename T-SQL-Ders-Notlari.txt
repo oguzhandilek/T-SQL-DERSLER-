@@ -1763,7 +1763,7 @@ Select dbo.Rapor(k.KategoriAdi,u.UrunAdi,u.BirimFiyati,u.HedefStokDuzeyi) From U
 
 Create Proc sp_Ornek
 (
-	@Id int --Aksi söylenmediği taktirde bu parametrenin yapısı inputtur.
+	@Id int --Aksi söylenmediği taktirde bu parametrenin yapısı inputtur. Yani output keyword'ü ile değiştirlebilir. Ama default input'tur
 )
 As
 Select * from Personeller where PersonelID=@Id
@@ -1802,3 +1802,95 @@ Exec urunGetir 40
 Declare @Sonuc int
 Exec @Sonuc=urunGetir 40
 print CAST(@Sonuc as nvarchar(max))+ ' adet ürün işlemden etkilenmişitr'
+
+--___ OUtPut İle Değer Döndürme---
+
+Create Proc sp_Ornek3
+(
+	@Id int,
+	@Adi nvarchar(max) output,
+	@Soyadi nvarchar(max) output
+)As
+Select @Adi=Adi, @Soyadi=SoyAdi  from Personeller where PersonelID=@Id
+
+Declare @Adi nvarchar(max), @Soyadi nvarchar(max)
+Exec sp_Ornek3 3,@Adi Output,@Soyadi output
+select @Adi+' '+@Soyadi
+
+---Genel Örnek---
+
+--Dışarıdan aldığı isim,soyisim ve şehir bilgilerini Personeller tablosunda igili kolonlara ekleyen Stored Procedure'ü yazınız.
+
+create procedure sp_PersonelEkle
+(
+	
+	@Adi nvarchar(50),
+	@Soyadi nvarchar(50),
+	@Sehir nvarchar(50)
+) As
+	Insert Into Personeller(Adi,Soyadi,Sehir) values(@Adi,@Soyadi,@Sehir)
+
+	Exec sp_PersonelEkle 'Oğuzhan','Dilek','Erzurum'
+
+	select * from Personeller
+
+
+---Parametreler Varsıyaln Değer---
+
+Create Proc sp_PersonelEkle2
+(
+	@Adi nvarchar(50)='İsimsiz',
+	@Soyadi nvarchar(50)='Soyadsız',
+	@Sehir nvarchar(50)='Şehisiz'
+)
+As 
+	Insert Into Personeller(Adi,Soyadi,Sehir) values(@Adi,@Soyadi,@Sehir)
+	Select * from Personeller
+
+Exec sp_PersonelEkle2 'Zehra','Dilek','Akara'
+--Burada varsayılan değerler devreye girmemektedir.
+
+exec sp_PersonelEkle2
+--- Normalde bu şekilde parametrelere değer göndermeksizin çalışmaması lazım ama varsayılan değerler tanımda belirtildiği için devreye girmektedirler.
+
+exec sp_PersonelEkle2 'Sütlaç'
+--@Adi parametresi Sütlaç değerini alacaktır. Diğer parametreler varsayılan değerleri.
+
+
+--EXEC Komutu
+
+Exec(' Select * from Personeller')
+Select * from Personeller
+
+--Yanlış Kullanım
+
+Exec ('Declare @Sayac int=0')
+Exec ('Select @Sayac')
+
+--Doğru Kullanımı
+Exec(' Declare @Sayac int=0 Select @Sayac')
+
+
+---- Stored Procedure içerisinde Nesne Oluşturma
+
+Create Proc sp_TabloOlustur
+(
+	@TabloAdi nvarchar(max),
+	@Kolon1Adi nvarchar(max),
+	@Kolon1Ozellikleri nvarchar(max),
+	@Kolon2Adi nvarchar(max),
+	@Kolon2Ozellikleri nvarchar(max)
+)
+as
+Exec
+('
+Create Table '+ @TabloAdi+ '
+(	'	+ @Kolon1adi+' '+ @Kolon1Ozellikleri+',
+	'	+ @Kolon2Adi +' '+ @Kolon2Ozellikleri +'
+	
+)
+')
+
+Exec sp_TabloOlustur 'OrnekTablo','Id','int primary key identity (1,1)','Adi','nvarchar(50)'
+
+drop proc sp_TabloOlustur
