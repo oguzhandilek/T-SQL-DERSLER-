@@ -1033,7 +1033,7 @@ on
 -- —Create İle Tablo Oluşturma
 USE OrnekVeriTabani
 
-Create Table tablo1
+Create Table tablo1c
 (
 	Kolon1 int,
 	Kolon2 nvarchar(max),
@@ -2081,3 +2081,204 @@ Disable Trigger OrnekTrigger on Personeller
 
 -- Trigger'l Aktifleştirme 
 Enable Trigger OrnekTrigger on Personeller
+
+--- Transaction
+--- Birden çok işlemin bir arada yapıldığı durumlarda eğer parçayı oluşturan işlemlerden herhangi birinde sorun olursa tüm İşlemi iptal ettirmeye yarar.
+
+--- Örneğin; kredi kartı ile alışveriş işlemlerinde transaction işlemi vardır. Siz marketten ürün alırken sizin hesabınızdan para düşülecek, marketin hesabına para aktarılacaktır. Bu İşlemde hata olmaması gerekir ve bundan dolayı bu işlem bir transaction bloğunda gerçekleştirilmelidir. Bu esnada herhangi bir sorun olursa bütün işlemler transaction tarafından iptal edilebilecektir.
+--Begin Tran veya Begin Transaction : Transaction İşlemini başlatır.
+
+---- Commit Tran : Transaction işlemini başarıyla sona erdirir.İşlem(ler)i gerçekleştirir.
+---- Rollback Tran : Transaction işlemini iptal eder.İşlem(ler)i geri alır.
+
+--- Commit Tran yerine sadece Commit yazılabilir.
+--- Rollback Tran yerine sadece Rollback yazılabilir.
+
+---- Normalde default olarak herşey Begin Tran ile başlayıp, Commit Tran ile biter. !!! Biz bu yapıları kullanmasak bile ! ! !
+
+--- Transaction
+--Transaction Tanımlama
+--- Prototip
+--- Begin Tran [Transaction Adı]
+--- İşlemler
+
+insert	Bolge Values(5, 'Çorum')	--Varsayılan olarak Transaction	kontrolünde	bir	İşlemdir.	Netice	olarak gene	varsayılan olarak Commit	Tran olarak bitmektedir.
+
+Begin Tran Kontrol
+insert Bolge values(6,'Erzurum')
+Commit Tran
+
+-- Transaction'a isim vermek zorunda değiliz.
+Begin Tran 
+insert Bolge values(7,'Mars')
+Commit Tran
+
+Begin tran Kontrol
+Declare @i int 
+Delete from Personeller where PersonelID>10
+set @i=@@ROWCOUNT
+	if @i=1
+		Begin
+			print 'Kayıt silindi'
+			Commit
+			--ya da
+			--Tran Commit
+		End
+	Else
+		Begin
+			print 'İşlemler geri alındı'
+			Rollback
+			--ya da
+			-- Tran Rollback
+		End
+
+---- Örnek
+--- İki adet banka tablosu oluşturalım. Bankalar arası havale işlemi gerçekleştirelim. Ve bu işlemleri
+--yaparken transaction kullanalım.
+
+---Örnek 121. videoada sonra yapılacak
+
+
+
+
+--SQL Server Database Yedeği Alma ve Yükleme
+
+--Backup İle Yedek Alma
+-- Restore İle Yedeği Yükleme
+
+--Backup ile Yedek Alma
+--MS SQL Server Management Studio'nun Object Explorer sekmesinden Yedeği alıncak Databse'in üstüne sağ tıklayıp Tasks->Back Up.. seçilir.
+--Açılan pencerenin Source bölümünde dikkat etmeniz gereken yer Backup Type olacaktır. burada 2 farklı seçenek çıkacak.Bunlar;
+	--Full
+	--Differantial
+
+--Full veritabanında veriler dahil içinde log dosyalrı, triggerlar vs ne varsa yedeğini alackatır. 
+--Differantial ise değişiklikleri kapsayan nesneleri alacaktır.
+
+-- Destination da ise backup yapılacak ortamı secip (Disk,URL) ardından path'i verip Ok butonu ile yedeğimizi alabiliriz.
+
+
+---- Restore İle Yedeği Yükleme
+	--
+	----MS SQL Server Management Studio'nun Object Explorer sekmesinden Yedeği yüklnecek Databse'in üstüne sağ tıklayıp Tasks->Restore->Database
+	--Açılan pencerede Source bölümünde Device'ı seçip ilgili backup dosyamızı dizinden bulup işaretliyoruz.
+	
+---Bu yöntem basit gibi görünsede asıl tavsiye edilen Generate Scripts ile Alma ve Yükeleme olacaktır.
+
+--- Generate Scripts
+
+
+/*
+===============================================================================
+GENARATE SCRIPTS İLE YEDEK ALMA (ŞEMA + VERİ) ve YÜKLEME (AKTARIM) ADIMLARI
+===============================================================================
+
+AMAÇ:
+- SSMS (SQL Server Management Studio) üzerinden "Generate Scripts" ile bir veritabanının
+  şemasını VE/VEYA verisini .sql dosyası olarak üretmek ve bu scripti başka bir
+  sunucu/ortama çalıştırarak yüklemek.
+
+-------------------------------------------------------------------------------
+A) YEDEK ALMA: GENERATE SCRIPTS (SSMS GUI)
+-------------------------------------------------------------------------------
+1) SSMS -> Object Explorer -> kaynak sunucu -> Databases -> {KaynakDB}
+2) Sağ tık {KaynakDB} -> Tasks -> Generate Scripts...
+3) "Choose Objects"
+   - Script entire database and all database objects  (Tüm veritabanı ve objeler)
+     veya
+   - Select specific database objects (Sadece seçtiğin tablolar, view’lar vb.)
+4) "Set Scripting Options"
+   - Save to file (önerilir) -> Save as type: Single file / Unicode olarak kaydedin.
+   - (İsteğe bağlı) Save to Clipboard / Save to new query window
+5) "Advanced" (en önemli ayarlar):
+   - Types of data to script           : Schema and data     (yalnız şema istiyorsan "Schema only")
+   - Script Indexes                    : True
+   - Script Triggers                   : True
+   - Script Primary Keys               : True
+   - Script Foreign Keys               : True
+   - Script Check Constraints          : True
+   - Include IF NOT EXISTS             : True (varsa çakışmaları azaltır)
+   - Script DROP and CREATE            : CREATE (mevcudu silip kuracaksan "DROP and CREATE")
+   - Script for Server Version         : Hedef SQL Server sürümüne göre seç (örn. SQL Server 2019)
+   - Script Collation                  : Hedefle aynı kolasyon kullanacaksan False; kaynak kolasyonu aynen taşımak istersen True
+   - Script USE DATABASE               : True (hedef DB adını kolay değiştirmek için faydalı)
+   - Script Permissions                : True (gerekliyse)
+6) Next -> Next -> Finish -> Oluşan .sql dosyasını güvenli bir yerde sakla.
+   (Örn: MyDb_20250818_SchemaData.sql)
+
+-------------------------------------------------------------------------------
+B) YÜKLEME/AKTARIM: OLUŞAN SCRIPTİ HEDEFTE ÇALIŞTIRMA
+-------------------------------------------------------------------------------
+Önkoşullar:
+- Hedef SQL Server sürümü, scriptte seçtiğin "Script for Server Version" ile uyumlu olmalı.
+- Büyük veri setlerinde işlem uzun sürebilir; mümkünse hedefte boş/temiz bir DB kullan.
+
+Adımlar:
+1) SSMS ile HEDEF sunucuya bağlan.
+2) (Gerekirse) hedefte veritabanı oluştur:
+   - New Database… (GUI) veya
+   - CREATE DATABASE HedefDB;  (Script içinde CREATE varsa ayrıca gerekmez)
+3) Oluşturduğun .sql dosyasını SSMS’te aç.
+4) En üstteki "USE [VeritabaniAdi]" bölümünü HEDEF veritabanı adına göre düzenle.
+5) (Varsa) dosyanın başındaki CREATE DATABASE kısmındaki fiziksel yol/kolasyon ayarlarını hedefe uygun yap.
+6) "Execute" (F5) ile çalıştır.
+   - Büyük scriptlerde önce "Parse" ile sentaks kontrolü yapabilirsin.
+   - Çalışma sırasında SET IDENTITY_INSERT ve constraint disable/enable adımlarını script genelde otomatik yönetir.
+
+-------------------------------------------------------------------------------
+C) SIK KARŞILAŞILAN DURUMLAR ve İPUÇLARI
+-------------------------------------------------------------------------------
+- Çift kayıt/PK hatası (2627): Hedefte aynı veri varsa önce temizle (DROP/Truncate) veya scripti
+  "DROP and CREATE" seçeneğiyle yeniden üret.
+- Yabancı anahtar (FK) sırası: Advanced’de FK/PK/Indexes/Checks TRUE ise sırayı genelde doğru kurar.
+  Sorun olursa iki parça üret: önce "Schema only", sonra "Data only" ve sırayla çalıştır.
+- Kolasyon uyuşmazlığı: Hedef DB’yi kaynakla aynı kolasyonda oluştur veya Advanced -> Script Collation = True.
+- Yetkiler/Loginler: Script Permissions = True ile objelere ait GRANT/REVOKE gelir.
+  Kullanıcı-login eşlemesi için sonrası: ALTER USER [kullanici] WITH LOGIN = [loginAdi];
+- Büyük/veri yoğun DB’ler: Generate Scripts uzun sürer. Böyle durumlarda klasik .bak restore veya .bacpac (Export Data-tier Application)
+  daha hızlı/uygun olabilir.
+
+-------------------------------------------------------------------------------
+D) HIZLI ÖRNEK (SADECE SEÇİLİ TABLOLAR, ŞEMA+VERİ)
+-------------------------------------------------------------------------------
+1) Tasks -> Generate Scripts -> Select specific database objects -> Tables -> dbo.Personeller (+ diğerleri)
+2) Set Scripting Options -> Save to file (Unicode) -> Advanced:
+   - Types of data to script = Schema and data
+   - Script Indexes/Triggers/PK/FK/Checks = True
+   - Include IF NOT EXISTS = True
+3) Generate -> Hedefte .sql dosyasını aç -> USE [HedefDB] satırını kontrol et -> Execute.
+
+-------------------------------------------------------------------------------
+E) NE ZAMAN HANGİ YÖNTEM?
+-------------------------------------------------------------------------------
+- Generate Scripts: Küçük/orta ölçek, seçmeli obje taşıma, sürüm uyumu ve kaynak kontrol için ideal.
+- .bak ile Restore: En hızlı ve tam kopya; büyük veriler için tercih edilir.
+- .bacpac: Azure/versiyon geçişlerinde şema+veri taşıma için pratik.
+
+NOT:
+- Bu notlar SSMS içindeki "Generate Scripts" sürecini özetler. Gerekirse aynı işlemleri
+  PowerShell/SMO ile otomatikleştirebilirsin.
+===============================================================================
+*/
+
+
+
+
+--- T-SQL En Son Primary Key ID yi Bulmak
+Select IDENT_CURRENT('Personeller')
+Select IDENT_CURRENT( 'Personeller') + 1
+
+--ldentity, Scope_Identity() ve Ident_Current ( ) Komutları
+
+-- Açılmış olan bağlantıda(connection); tablo yahut sorgunun çalıştığı scope'a bakmaksızın son üret İlen
+--identity değerini vermektedir.
+-- Dikkat !
+-- Trigger kullanılan sorgularda yanlış sonuç alma İhtimalinden dolayı kullanılması tavsiye edilmez.
+
+-- Scope_ldentity()
+-- Açılmış olan bağlantıda(connection) ve sorgunun çalıştığı scope'ta son üretilen identity değerini döndürür.
+--Dikkat !
+-- Trigger kullanılan sorgularda —Identity yerine bu fonksiyonun kullanılması tavsiye edilir.
+
+-- Ident_Current('TabloAdi')
+--Bağlantı ve sorgunun çalıştırıldığı scope'a bakmaksızın parametre olarak verilen tabloda üretilen sonuncu Identity değerini döndürür.

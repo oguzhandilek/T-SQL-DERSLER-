@@ -1,0 +1,66 @@
+/*
+===========================================================
+   SQL Nesne İsimlendirme Best Practices (Önerilen Standart)
+===========================================================
+
+1) STORED PROCEDURE
+   - Kullanıcı tanımlı prosedürlerde prefix olarak "usp_" tercih edilir.
+   - "sp_" kullanılmamalı (system proc ile karışabilir, performans kaybı yaratır).
+   - Örnekler:
+     usp_GetCustomerById
+     usp_UpdateOrderStatus
+     usp_InsertProduct
+
+2) FUNCTION
+   - Scalar function için prefix: ufn_
+   - Table-valued function için prefix: tvf_
+   - Örnekler:
+     ufn_GetTotalPrice
+     ufn_CalculateAge
+     tvf_GetActiveCustomers
+
+3) CONSTRAINT
+   - Primary Key  : PK_
+   - Foreign Key  : FK_
+   - Unique       : UQ_
+   - Check        : CK_
+   - Default      : DF_
+   - İsim genelde tablo adı + kolon adı içerir.
+   - Örnekler:
+     PK_Customers_Id
+     FK_Orders_CustomerId
+     UQ_Users_Email
+     CK_Orders_Quantity
+     DF_Orders_OrderDate
+
+4) TRIGGER
+   - Prefix: trg_
+   - Tablo adı + işlem türü (Insert, Update, Delete) eklenir.
+   - Örnekler:
+     trg_Orders_Insert
+     trg_Customers_Update
+     trg_Products_Delete
+
+5) VIEW
+   - Prefix: vw_
+   - Örnekler:
+     vw_ActiveUsers
+     vw_SalesSummary
+
+6) INDEX
+   - Nonclustered Index  : IX_
+   - Clustered Index     : CIX_
+   - Unique Index        : UQIX_
+   - Örnekler:
+     IX_Customers_Email
+     CIX_Orders_OrderId
+     UQIX_Users_Username
+
+-----------------------------------------
+✅ Genel Kurallar:
+- Prefix + Anlamlı Ad
+- Tablo/kolon bilgisini yansıtır.
+- Türkçe karakter kullanılmaz.
+- Açıklayıcı ama çok uzun olmayan isimler tercih edilir.
+-----------------------------------------
+*/
