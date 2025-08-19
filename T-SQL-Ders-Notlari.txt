@@ -2282,3 +2282,106 @@ Select IDENT_CURRENT( 'Personeller') + 1
 
 -- Ident_Current('TabloAdi')
 --Bağlantı ve sorgunun çalıştırıldığı scope'a bakmaksızın parametre olarak verilen tabloda üretilen sonuncu Identity değerini döndürür.
+
+
+
+
+--- Default Values İle Sadece Identity Kolonuna Veri Eklemek
+--- Eğer ki veritabanında görevi sadece diğer tablolar tarafından referans alınacağı idleri üretecek ve barındıracak olan bir tabloya ihtiyacınız varsa kullanılır.
+
+---Prototip
+
+Insert OrnekTablo
+Default Values
+
+
+--- Top Keywordü İle Update İşlemi
+
+Select top 5 * from Personeller
+Update top(5) Personeller set Adi='Updated'
+Delete top(5) from Personeller
+
+
+--- T-SQL ROW NUMBER Fonksiyonu
+---- Prototipi
+--- Select ROW_NUMBER() OVER(order by KOLONAdi) Indexer, * from Tablo
+
+
+select ROW_NUMBER() OVER(Order by Adi) Indexer ,  * from Personeller order by SoyAdi
+
+
+
+--- Partition By Komutu ile Gruplama
+--- Prototip
+--- Select ROW_NUMBER() OVER(partition by Kolon1 order by Kolon2) Indexer, * from Tablo
+
+Select ROW_NUMBER() Over(partition by MusteriID order by Satistarihi) indexer, * from Satislar order by SatisID
+
+
+-- T-SQL ANSI NULLS Komutu
+
+-- SET ANSI_NULLS [ ON I OFF ]
+
+-- ANSI NULLS komutu, where şartlarında kontrol edilen eşitlik yahut eşit değil lik durumlarında Null değerlerin dikkate alınıp alınmayacağını belirlememizi sağlayan bir özelliktir.
+
+--'ON' değeri verilirse Null değerler dikkate alınmaz.
+-- 'OFF' değeri verilirse Null değerler dikkate alınır.
+
+set ansi_nulls on
+
+select * from Personeller where Unvan=null
+
+set ansi_nulls off
+
+
+
+
+
+
+
+--- Dynamic Data Masking
+
+
+
+--SQL Server’da Dynamic Data Masking (DDM), veritabanındaki hassas bilgilerin (TC kimlik no, telefon, e-posta vb.) yetkisiz kullanıcılar tarafından görülmesini engellemek için kullanılan bir güvenlik özelliğidir.
+
+--DDM, verinin fiziksel olarak değiştirilmesini sağlamaz; sadece sorgu sonucu dönerken maskeleme uygular. Yani tablo içinde gerçek veri durur, ancak maskeleme kuralları tanımlanmışsa, yetkisi olmayan kullanıcı veriyi kısmi veya sahte biçimde görür.
+
+--Örnek:
+
+--Gerçek veri: 1234-5678-9012-3456
+
+--Maskelenmiş görünüm: XXXX-XXXX-XXXX-3456
+
+--Avantajları:
+
+--Uygulamayı değiştirmeden hızlı şekilde uygulanabilir.
+
+--Hassas veriye erişimi kontrol altına alır.
+
+--Kısıtları:
+
+--Yalnızca SELECT sonuçlarında geçerlidir.
+
+--Yönetici (db_owner) roller maskeyi görmez, gerçek veriye erişir.
+
+
+--- default Parametresi
+-- Metinsel : XXXX
+-- sayısal : 0000
+-- Tarihsel : 01.01.2000 00:00:00.00000000
+-- Binary : 0 -> ASCII
+
+-- email Parametresi
+-- odilek@gmail.com : 'oxxx@xxxx.com' 
+
+
+--Partial Parametresi
+-- Partia1(3, H, 2) // ilk 3 karakter gizleme, maske karakteri H olsun, son 2 karakter maskeleme olmasın
+
+
+--Dynamic Data Masking Nasıl Uygulanır?
+-- Prototip
+--CREATE TABLE [TABLO ADI]
+--[KOLON ADI] [KOLON Tipi] MASKED WITH (FUNCTION = ' default() ' )
+
