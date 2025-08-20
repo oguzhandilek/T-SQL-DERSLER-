@@ -2385,3 +2385,63 @@ set ansi_nulls off
 --CREATE TABLE [TABLO ADI]
 --[KOLON ADI] [KOLON Tipi] MASKED WITH (FUNCTION = ' default() ' )
 
+use OrnekDatabase
+Create Table Ogrenciler
+(
+	Ogrenci_Id int primary key identity(1,1),
+	Adi nvarchar(20) masked with (function='default()') null,
+	Soyadi nvarchar(20) masked with (function='default()') null,
+	Memleketi nvarchar(20) masked with (function='default()') null,
+	TCNo bigint  masked with (function='default()') not null unique,
+	Sube nvarchar(1) masked with (function='default()') null,
+	eMail nvarchar(max) masked with (function='email()') null,
+	Hakkinda nvarchar(max) masked with (function='partial(3, "Ğ",2)') null,
+	DogumTarihi datetime masked with (function='default()')null,
+
+)
+
+go 
+
+insert into Ogrenciler
+(Adi, Soyadi, Memleketi, TCNo, Sube, eMail, Hakkinda, DogumTarihi)
+values
+(N'Ahmet', N'Yılmaz', N'Erzurum', 12345678901, N'A', N'ahmet.yilmaz@example.com', N'Çok çalışkan bir öğrenci', '2002-05-10'),
+
+(N'Ayşe', N'Demir', N'Ankara', 23456789012, N'B', N'ayse.demir@example.com', N'Projelerde aktif görev alır', '2001-11-20'),
+
+(N'Mehmet', N'Çelik', N'İzmir', 34567890123, N'A', N'mehmet.celik@example.com', N'Sınıfın spor kaptanı', '2003-03-15');
+
+
+create user YetkiliUser without login --YetkiliUser isminde bir kullanıcı oluşturuluyor.
+go
+grant select on Ogrenciler to YetkiliUser -- YETKILIUSER isimli kullanıcıya OGRENCILER tablosunda Select yetkisi veriliyor
+
+execute as user ='YetkiliUser' --YetkiliUser isimli kullanıcdayken 
+select * from Ogrenciler
+revert;--- Tekrar eski kullanıcıya dön
+
+--Alter İle Kolona Dynamic Data Masking Uygulama
+
+alter table Ogrenciler
+add Ekkolon nvarchar(max) masked with (function='partial(3,"Ğ",2)') null
+
+update Ogrenciler set ekkolon='Ekkolonn'
+
+
+--Alter İle Dynamic Data Misking Kolonunda Değişiklik Yapma
+
+alter table Ogrenciler
+alter column Ekkolon nvarchar(max) masked with (function='partial(3,"XXXX",2)') null
+
+--— Dynamic Data Masking Kaldırma
+
+alter table Ogrenciler
+alter column Ekkolon drop masked
+
+-- Kullanıcıya Göre Dynamic Data Mi sking Özelliğini Pasifleştirme
+
+Grant UNMASK to YetkiliUser
+execute as user='YetkiliUser'
+select * from Ogrenciler
+revert
+
