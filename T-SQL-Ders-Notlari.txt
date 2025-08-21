@@ -2650,3 +2650,92 @@ ALTER TABLE DERSKAYITLARI SET (SYSTEM_VERSIONING=OFF)
 
 Truncate table derskayitlari
 Drop Table DersKayitlari
+
+
+
+
+
+--## 📌 SQL Server 2016 – Row Level Security (RLS)
+
+--### 🔹 Tanım
+
+--* SQL Server 2016 ile gelen bir güvenlik özelliğidir.
+--* Kullanıcıların tablodaki **sadece kendisine ait kayıtları** görmesini sağlar.
+--* Yani **satır (row) bazlı yetkilendirme** yapar.
+
+-----
+
+--### 🔹 Neden Kullanılır?
+
+--* Veri tabanlarında amaç → verileri düzenli, organize ve ilişkisel şekilde saklamak/modifiye etmek.
+--* Bu süreçte **güvenlik birinci önceliktir**.
+--* Klasik yöntem: kullanıcı, rol ve yetkilendirmeler.
+--* **Eksik nokta**: Rol bazlı yetkiler tüm tabloya erişim verir.
+
+-----
+
+--### 🔹 Row Level Security ile Fark
+
+--* Kullanıcı → yalnızca **kendisini ilgilendiren satırları** görebilir.
+--* Örneğin:
+
+--  * Çalışan tablosu → her çalışan sadece **kendi verilerini** sorgular.
+--  * Müşteri tablosu → müşteri sadece **kendi siparişlerini** görür.
+
+
+--Row Level Security Uygulaması
+
+CREATE TABLE Satislar
+(
+    SatisID INT PRIMARY KEY IDENTITY,
+    Urun NVARCHAR(100),
+    Adet INT,
+    Kullanici NVARCHAR(50)
+);
+
+INSERT INTO Satislar (Urun, Adet, Kullanici) VALUES
+('AUrun', 3, 'Zehra'),
+('BUrun', 5, 'Sutlac'),
+('CUrun', 13, 'Safinaz'),
+('DUrun', 23, 'Zehra'),
+('EUrun', 33, 'Sutlac'),
+('Furun', 43, 'Safinaz'),
+('GUrun', 53, 'Zehra'),
+('HUrun', 63, 'Sutlac'),
+('IUrun', 73, 'Safinaz'),
+('OUrun', 83, 'Zehra'),
+('PUrun', 93, 'Sutlac'),
+('QUrun', 133, 'Safinaz');
+
+
+--- Kullanıcıları Oluşturalım.
+Create user Zehra without login
+Create user Sutlac without login
+Create user Safinaz without login
+
+--- Bu kullanıcılara Satislar tablosunda Select yetkisi verelim.
+Grant Select On Satislar To Zehra
+Grant Select On Satislar To Sutlac
+Grant select on Satislar to Safinaz
+
+
+--- Row Level Security kullanabilmek için inline Table Value Function oluşturmalıyız.
+
+Create Function tvf_RowLevelSecurity (@KullaniciAdi as sysname) Returns Table
+With Schemabinding
+as
+	return select 1rowLevelResult
+	Where @KullaniciAdi=USER_NAME()
+
+--Şimdi bu fonksiyonu, birazdan cluşturacağımız Security Policy(Güvenlik Politikası) için Fi iter Predicate olarak ekliyoruz. Yani uzun lafın kısası filtre olarak ayarlıyoruz.
+Create Security Policy GuvenlikFiltresi
+Add Filter Predicate dbo.tvf_RowLevelSecurity(Kullanici)
+On dbo.Satislar
+With (State=On)
+
+-- DİKKAT ! !
+-- KULLANILAN YAPIDA ŞEMA ADLARINI(.dbo) UNUTMA
+
+Exec As User ='Zehra'
+
+Select * from Satislar
