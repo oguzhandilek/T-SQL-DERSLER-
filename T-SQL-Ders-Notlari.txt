@@ -2438,10 +2438,215 @@ alter column Ekkolon nvarchar(max) masked with (function='partial(3,"XXXX",2)') 
 alter table Ogrenciler
 alter column Ekkolon drop masked
 
--- Kullanıcıya Göre Dynamic Data Mi sking Özelliğini Pasifleştirme
+-- Kullanıcıya Göre Dynamic Data Massking Özelliğini Pasifleştirme
 
 Grant UNMASK to YetkiliUser
 execute as user='YetkiliUser'
 select * from Ogrenciler
 revert
 
+
+
+
+
+-- Temporal Tables(System-Versioned Table - Zamansal Tablolar)
+
+--## 📌 Temporal Tables (SQL Server 2016)
+
+--**Tanım:**
+
+--* SQL Server 2016 ile gelen bir özellik.
+--* “Zamansal tablolar” olarak da bilinir.
+--* Veri üzerindeki **DML (Insert, Update, Delete)** işlemlerinin geçmişini tutar.
+--* Verilerin **zaman bazlı takibini** sağlar.
+
+-----
+
+--### 🎯 Temporal Tables ile Gelen Faydalar
+
+--* **Veri değişikliklerini izleme** (Update/Delete sonrası eski halini görebilme).
+--* Yanlışlıkla yapılan **Delete/Update işlemlerini geri getirme** (Transaction değil, gerçekten fiziksel veri kaybı olsa bile).
+--* Belirli bir **zaman aralığında verinin durumunu** görebilme.
+--* Daha **performanslı ve düşük maliyetli raporlama**.
+--* Önceden kullanılan **log tabloları** veya **trigger yapıları** gibi ek yapılara gerek yok.
+
+-----
+
+--### 🏗 Yapı
+
+--* Temporal table = **Asıl tablo + History tablosu**
+--* **History tablosu** → verilerin geçmiş versiyonlarını saklar.
+--* Tabloya 2 ekstra kolon eklenir:
+
+--  * `StartDate` → verinin geçerli olmaya başladığı tarih.
+--  * `EndDate` → verinin geçerli olmayı bıraktığı tarih.
+--* Bu kolonların tipi: `datetime2`.
+
+-----
+
+--### ⚡ Özet
+
+--* Temporal Tables = **raporlama sistemi**.
+--* Verileri **zamansal (tarih bazlı)** olarak saklar ve analiz etmeye yarar.
+--* Özellikle **değişikliklerin geçmişini izleme ve raporlama** için idealdir.
+
+---
+
+
+--Bir Verinin Zamansal Takibi
+--- Veri ilk Kaydedildiğinde (insert)
+--Veri İlk Güncellendiğinde (Update)
+--- Verinin Sonraki Güncellemelerinde (Update)
+
+
+
+--- Temporal Tables Özelliğini Kullanırken Nelere Dikkat Etmeliyiz?
+---- Temponal Tables İle raporlama ve takip mekanizması oluşturacağımız tablolarda Primary Key tanımlanmış bir kolon olması gerekmektedir. Bu şekilde yaşam döngüsünde hangi verinin değişime uğradığını bu Primary Key aracılığıyla ayırt edebileceğiz.
+---- Takibi sağlayacağımız ve kaydını tutacağımız tablomuzun içerisinde bir başlangıç(StartDate) birde bitiş(EndDate) nitelğinde iki adet "datetime2" tipinden kolonların bulunması gerekmektedir.
+---- Linked Server üzerinde Temporal Tables kullanılmamaktadır.
+---- History tablomuzda constraint yapılarının hiçbirini uygulayamayız.
+--- Eğer bir tabloda Temporal Tables aktifse o tabloda Truncate işlemi gerçekleştiremiyoruz.
+---- History tablosunda direkt olarak DML işlemleri gerçekleştiremiyoruz.
+---- Tempraol Tables özelliğinin bulunduğu bir tabloda Computed Column(Hesaplanmış Kolon) tanımlayamıyoruz.
+
+
+create table DersKayitlari
+(
+------------1. Kısım ------------
+	DersId int primary key identity(1,1),
+	Ders nvarchar(max),
+	Onay Bit,
+------------1. Kısım ------------
+
+------------2. Kısım ------------
+	StartDate Datetime2 generated always as row start not null,
+	EndDate Datetime2 generated always as row end not null,
+------------2. Kısım ------------
+
+------------3. Kısım ------------
+	Period for system_time(StartDate,EndDate)
+------------3. Kısım ------------
+
+)
+
+------------4. Kısım ------------
+With(System_Versioning = On(HISTORY_TABLE = dbo.DersKayitlariLog)) --Eğer HISTORY_TABLE özelliği ile History tablosuna isim vermezsek rastgele İsimde oluşturulur.
+------------4. Kısım ------------
+
+
+--- Temporal Table Çalışma Mekanizması
+
+update DersKayitlari set Ders='Matematik2' where DersId=1
+update DersKayitlari set Ders='Matematik4' where DersId=1
+
+select * from DersKayitlari
+select * from DersKayitlariLog
+
+
+
+--- Var Olan Tabloyu Temporal Tables Olarak Ayarlama
+
+
+--- Eğer bu tabloyu Temporal yapmak İstiyorsak dikkat !
+-- Tablo içerisinde veri var mı? Yok mu? Eğer varsa yeni eklenecek olan "StartDate" ve "EndDate" kolonları boş kalamayacakları için varsayılan değerlerin belirtilmesi gerekmektedir. Yok eğer veri yoksa bu İşlemi düşünmemize gerek olmayacaktır.
+
+--Eğer Veri yoksa
+Alter Table Ogrenciler 
+Add
+StartDate Datetime2 generated always as row start not null,
+EndDate datetime2 generated always as row end not null,
+Period for system_time(StartDate,EndDate)
+
+--- Eğer Veri Varsa.
+Alter Table Ogrenciler
+Add
+StartDate Datetime2 generated always as row start not null default cast('1900-01-01 00:00:00.0000000' as datetime2),
+EndDate Datetime2 generated always as row end not null default cast('9999-12-31 23:59:59.9999999' as datetime2),
+Period for system_time(StartDate,EndDate)
+
+--- Şeklinde peroyodik kayıt kolonlarımızı ekleyebiliriz.
+
+-- Kolonlar eklendikten sonra ilgili tablo aşağıdaki gibi Temporal hale getirilir.
+
+Alter Table Ogrenciler
+Set (System_Versioning= On(HISTORY_TABLE=dbo.OgrencilerLog ))
+
+
+--- History Tablosuna Özel Temponal Tabloyu Sorgulama
+--SELECT *  
+--FROM DersKayitlari dk  
+--INNER JOIN DersKayitlariLog dkl  
+--    ON dk.DersID = dkl.DersID  
+--WHERE DAY(CAST('2016-09-26' AS datetime2)) = DAY(dkl.EndDate);
+
+--Bu şekilde ilişkisel tablolar ile de sorgulama yapabiliriz.
+
+--Lakin tablomuzu History tablosunun periyoduna özel bir şekilde de rahatça sorgulatabilmekteyiz.
+- 
+
+
+--AS OF datetime
+
+--Temporal tabloların en güçlü özelliklerinden biridir.
+--Belirli bir anı gösterir. Sadece tek bir zaman diliminde kaydın nasıl göründüğünü getirir.
+--Mantıksal sorgusu:
+--StartDate <= datetime  
+--AND EndDate > datetime
+select * from DersKayitlari
+For System_time as of '2000-08-20 07:57:04.4431646'
+
+-- (FROM – TO) ile Temporal Tablo Sorgulama
+--Bitiş zamanı dahil edilmez.
+--FROM <start datetime> TO <end datetime>
+--Mantıksal sorgusu:
+--StartDate >= <start datetime>  
+--AND EndDate <= <end datetime>
+
+select * from DersKayitlari
+for system_time from '2024-08-20 08:02:17.0465892' to '2025-08-20 08:02:17.0465892'
+where DersId=3
+
+--BETWEEN
+--... BETWEEN <start_datetime> AND <end_datetime>
+--Bitiş zamanı dahil edilir.
+--Mantıksal sorgusu:
+--StartDate >= <start_datetime>  
+--AND EndDate <= <end_datetime>
+
+
+--CONTAINED IN
+--Kaydın tüm geçerlilik süresi verilen aralığın içinde olmalıdır.
+--... CONTAINED IN (<start_datetime>, <end_datetime>)
+--Mantıksal sorgusu:
+--StartDate >= <start_datetime>  
+--AND EndDate <= <end_datetime>
+
+
+--Temporal Tabloları Listelemek
+
+-- 1. Yöntem
+SELECT  
+    OBJECT_NAME(object_id) AS [Table Name],  
+    temporal_type_desc AS [Temporal Type],  
+    history_table_id,  
+    OBJECT_NAME(history_table_id) AS [History Table Name]  
+FROM sys.tables  
+WHERE history_table_id IS NOT NULL;
+
+--ya da
+
+-- 2. Yöntem
+SELECT  
+    name AS [Table Name],  
+    temporal_type_desc AS [Temporal Type],  
+    OBJECT_NAME(history_table_id) AS [History Table Name]  
+FROM sys.tables  
+WHERE temporal_type_desc = 'SYSTEM_VERSIONED_TEMPORAL_TABLE';
+
+
+--- Temporal Tables'i Pasifize Etme
+
+ALTER TABLE DERSKAYITLARI SET (SYSTEM_VERSIONING=OFF)
+
+Truncate table derskayitlari
+Drop Table DersKayitlari
